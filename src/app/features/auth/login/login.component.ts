@@ -14,11 +14,6 @@ import { LanguageSwitcherComponent } from '../../../shared/components/language-s
   template: `
     <div class="login-page">
 
-      <!-- Animated background blobs -->
-      <div class="bg-blob blob1"></div>
-      <div class="bg-blob blob2"></div>
-      <div class="bg-blob blob3"></div>
-
       <!-- Lang switcher -->
       <div class="lang-top">
         <app-language-switcher></app-language-switcher>
@@ -95,25 +90,11 @@ import { LanguageSwitcherComponent } from '../../../shared/components/language-s
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(145deg, #0D2B5E 0%, #0D6B3C 60%, #E8A020 100%);
+      background:
+        linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.62)),
+        url('assets/images/bg-login.jpg') center/cover no-repeat fixed;
       position: relative;
       overflow: hidden;
-    }
-
-    /* Animated background blobs */
-    .bg-blob {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.18;
-      animation: blobMove 12s ease-in-out infinite alternate;
-    }
-    .blob1 { width: 500px; height: 500px; background: #27AE60; top: -100px; left: -100px; animation-delay: 0s; }
-    .blob2 { width: 400px; height: 400px; background: #E8A020; bottom: -80px; right: -80px; animation-delay: 3s; }
-    .blob3 { width: 300px; height: 300px; background: #1A4A9B; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: 6s; }
-    @keyframes blobMove {
-      from { transform: scale(1) translate(0,0); }
-      to   { transform: scale(1.15) translate(20px, 20px); }
     }
 
     .lang-top { position: absolute; top: 20px; right: 24px; z-index: 10; }
