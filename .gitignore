@@ -9,7 +9,6 @@ dist/
 
 # Environment
 .env
-src/environments/environment.prod.ts
 
 # IDE
 .vscode/
