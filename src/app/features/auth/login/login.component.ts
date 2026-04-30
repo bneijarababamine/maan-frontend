@@ -92,7 +92,7 @@ import { LanguageSwitcherComponent } from '../../../shared/components/language-s
       justify-content: center;
       background:
         linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.62)),
-        url('assets/images/bg-login.jpg') center/cover no-repeat fixed;
+        url('/assets/images/bg-login.jpg') center/cover no-repeat fixed;
       position: relative;
       overflow: hidden;
     }
