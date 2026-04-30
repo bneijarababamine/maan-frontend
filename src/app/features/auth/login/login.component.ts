@@ -29,7 +29,7 @@ import { LanguageSwitcherComponent } from '../../../shared/components/language-s
 
         <!-- Logo + Name -->
         <div class="brand">
-          <img src="assets/images/logo.jpg" alt="Logo" class="brand-logo"
+          <img src="assets/images/logo.png" alt="Logo" class="brand-logo"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
           <div class="brand-logo-fallback" style="display:none">🕌</div>
           <div class="brand-text">
