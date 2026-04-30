@@ -34,12 +34,12 @@
   },
   "AUTH": {
     "LOGIN":    "Connexion",
-    "EMAIL":    "E-mail",
+    "PHONE":    "Numéro de téléphone",
     "PASSWORD": "Mot de passe",
     "SIGN_IN":  "Se connecter",
     "WELCOME":  "Bienvenue",
     "SUBTITLE": "Association caritative mauritanienne",
-    "ERROR":    "Email ou mot de passe incorrect"
+    "ERROR":    "Numéro de téléphone ou mot de passe incorrect"
   },
   "MEMBERS": {
     "TITLE":           "Adhérents",

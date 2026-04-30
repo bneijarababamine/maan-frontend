@@ -21,8 +21,8 @@ export class AuthService {
     if (saved) this.userSubject.next(JSON.parse(saved));
   }
 
-  login(email: string, password: string): Observable<any> {
-    return this.http.post<{ status: boolean; data: { token: string; user: AuthUser } }>(`${this.api}/auth/login`, { email, password }).pipe(
+  login(phone: string, password: string): Observable<any> {
+    return this.http.post<{ status: boolean; data: { token: string; user: AuthUser } }>(`${this.api}/auth/login`, { phone, password }).pipe(
       tap(res => {
         const { token, user } = res.data;
         localStorage.setItem('token', token);

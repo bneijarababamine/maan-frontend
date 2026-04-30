@@ -44,14 +44,14 @@ import { LanguageSwitcherComponent } from '../../../shared/components/language-s
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form" autocomplete="off">
 
-          <!-- Email -->
+          <!-- Phone -->
           <div class="field">
-            <label>{{ 'AUTH.EMAIL' | translate }}</label>
+            <label>{{ 'AUTH.PHONE' | translate }}</label>
             <div class="input-wrap">
-              <span class="input-icon">✉️</span>
-              <input type="email" formControlName="email"
-                     [class.error]="hasError('email')"
-                     [placeholder]="'AUTH.EMAIL' | translate">
+              <span class="input-icon">📱</span>
+              <input type="tel" formControlName="phone"
+                     [class.error]="hasError('phone')"
+                     [placeholder]="'AUTH.PHONE' | translate">
             </div>
           </div>
 
@@ -305,7 +305,7 @@ export class LoginComponent implements OnInit {
     this.lang.init();
     if (this.auth.isLoggedIn()) this.router.navigate(['/dashboard']);
     this.form = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
@@ -319,8 +319,8 @@ export class LoginComponent implements OnInit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.loading = true;
     this.errorMsg = false;
-    const { email, password } = this.form.value;
-    this.auth.login(email, password).subscribe({
+    const { phone, password } = this.form.value;
+    this.auth.login(phone, password).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: () => { this.loading = false; this.errorMsg = true; }
     });
