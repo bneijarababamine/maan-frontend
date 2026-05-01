@@ -37,7 +37,7 @@ interface MethodOption {
           <label *ngFor="let b of banks" class="method-card" [class.selected]="data.payment_method === b.value">
             <input type="radio" [value]="b.value" [(ngModel)]="data.payment_method"
                    (change)="onMethodChange()" hidden>
-            <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.label_fr" class="bank-logo">
+            <img *ngIf="b.logo" [src]="b.logo" [alt]="b.label_fr" class="bank-logo">
             <span *ngIf="!b.logo" class="cash-icon">💵</span>
             <span class="method-label">{{ currentLang === 'ar' ? b.label_ar : b.label_fr }}</span>
           </label>

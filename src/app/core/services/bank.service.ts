@@ -16,8 +16,7 @@ export class BankService {
 
   create(data: Partial<Bank>, logoFile?: File): Observable<{ data: Bank }> {
     if (logoFile) {
-      const fd = new FormData();
-      Object.entries(data).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, String(v)); });
+      const fd = this.toFormData(data);
       fd.append('logo', logoFile);
       return this.http.post<{ data: Bank }>(this.api, fd);
     }
@@ -26,13 +25,22 @@ export class BankService {
 
   update(id: number, data: Partial<Bank>, logoFile?: File): Observable<{ data: Bank }> {
     if (logoFile) {
-      const fd = new FormData();
-      Object.entries(data).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, String(v)); });
+      const fd = this.toFormData(data);
       fd.append('logo', logoFile);
       fd.append('_method', 'PUT');
       return this.http.post<{ data: Bank }>(`${this.api}/${id}`, fd);
     }
     return this.http.put<{ data: Bank }>(`${this.api}/${id}`, data);
+  }
+
+  private toFormData(data: Partial<Bank>): FormData {
+    const fd = new FormData();
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== null && v !== undefined) {
+        fd.append(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
+      }
+    });
+    return fd;
   }
 
   delete(id: number): Observable<void> {
