@@ -100,10 +100,6 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
                 <input type="file" accept="image/*" (change)="onEditBankLogo($event)" style="display:none">
               </label>
               <span class="bank-name-locked">{{ b.name_fr }} / {{ b.name_ar }}</span>
-              <div class="input-addon-wrap">
-                <input type="number" class="form-control balance-input" [(ngModel)]="editBankBalance" min="0">
-                <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
-              </div>
               <label class="toggle-label">
                 <input type="checkbox" [(ngModel)]="editBankActive"> {{ 'COMMON.ACTIVE' | translate }}
               </label>
@@ -405,7 +401,7 @@ export class SettingsComponent implements OnInit {
 
   saveEditBank(id: number): void {
     this.savingBank = true;
-    const data = { balance: this.editBankBalance, is_active: this.editBankActive };
+    const data = { is_active: this.editBankActive };
     this.bankService.update(id, data, this.editBankLogoFile ?? undefined).subscribe({
       next: res => { const i = this.banks.findIndex(b => b.id === id); if (i !== -1) this.banks[i] = res.data; this.editingBankId = null; this.savingBank = false; this.editBankLogoFile = null; this.editBankLogoPreview = null; },
       error: () => { this.savingBank = false; }
