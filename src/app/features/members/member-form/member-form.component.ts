@@ -196,6 +196,10 @@ export class MemberFormComponent implements OnInit {
         this.wilayaOptions = res.data
           .filter((w: Wilaya) => w.is_active)
           .map((w: Wilaya) => ({ id: w.name_fr, label: w.name_fr, sublabel: w.name_ar }));
+        if (!this.isEdit && this.wilayaOptions.length > 0) {
+          this.selectedAddress = this.wilayaOptions[0].id as string;
+          this.form.get('address')!.setValue(this.selectedAddress);
+        }
       }
     });
 
