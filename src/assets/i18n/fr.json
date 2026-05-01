@@ -300,7 +300,8 @@
     "QTY":            "Qté",
     "UNIT_VALUE":     "Valeur unitaire",
     "RECEIPT_EXISTING": "Existant",
-    "RECEIPT_NEW":      "Nouveau"
+    "RECEIPT_NEW":      "Nouveau",
+    "CLOSE":            "Fermer"
   },
   "AUTH_EXTRA": {
     "ROLE_ADMIN":    "Administrateur",

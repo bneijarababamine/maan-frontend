@@ -300,7 +300,8 @@
     "QTY":            "الكمية",
     "UNIT_VALUE":     "القيمة الوحدوية",
     "RECEIPT_EXISTING": "موجود",
-    "RECEIPT_NEW":      "جديد"
+    "RECEIPT_NEW":      "جديد",
+    "CLOSE":            "إغلاق"
   },
   "AUTH_EXTRA": {
     "ROLE_ADMIN":    "مسؤول",
