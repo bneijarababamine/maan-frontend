@@ -3,6 +3,7 @@ export interface Bank {
   name_fr: string;
   name_ar: string;
   logo?: string;
+  logo_public_id?: string;
   balance: number;
   is_active: boolean;
   created_at?: string;

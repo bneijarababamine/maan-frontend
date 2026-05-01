@@ -14,11 +14,24 @@ export class BankService {
     return this.http.get<{ data: Bank[] }>(this.api);
   }
 
-  create(data: Partial<Bank>): Observable<{ data: Bank }> {
+  create(data: Partial<Bank>, logoFile?: File): Observable<{ data: Bank }> {
+    if (logoFile) {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, String(v)); });
+      fd.append('logo', logoFile);
+      return this.http.post<{ data: Bank }>(this.api, fd);
+    }
     return this.http.post<{ data: Bank }>(this.api, data);
   }
 
-  update(id: number, data: Partial<Bank>): Observable<{ data: Bank }> {
+  update(id: number, data: Partial<Bank>, logoFile?: File): Observable<{ data: Bank }> {
+    if (logoFile) {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, String(v)); });
+      fd.append('logo', logoFile);
+      fd.append('_method', 'PUT');
+      return this.http.post<{ data: Bank }>(`${this.api}/${id}`, fd);
+    }
     return this.http.put<{ data: Bank }>(`${this.api}/${id}`, data);
   }
 

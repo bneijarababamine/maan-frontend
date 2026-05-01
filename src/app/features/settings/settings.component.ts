@@ -50,6 +50,11 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
         <div *ngIf="showAddBankForm" class="add-form">
           <form [formGroup]="addBankForm" (ngSubmit)="addBank()">
             <div class="form-row">
+              <label class="logo-upload-label" title="Choisir un logo">
+                <img *ngIf="addBankLogoPreview" [src]="addBankLogoPreview" class="logo-preview-sm">
+                <span *ngIf="!addBankLogoPreview" class="logo-upload-placeholder">🏦<br><small>Logo</small></span>
+                <input type="file" accept="image/*" (change)="onAddBankLogo($event)" style="display:none">
+              </label>
               <input type="text" formControlName="name_fr" class="form-control" [placeholder]="'SETTINGS.BANK_NAME_FR' | translate">
               <input type="text" formControlName="name_ar" class="form-control rtl-input" [placeholder]="'SETTINGS.BANK_NAME_AR' | translate" dir="rtl">
               <div class="input-addon-wrap">
@@ -59,7 +64,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
               <button type="submit" class="btn btn-primary" [disabled]="addBankForm.invalid || addingBank">
                 {{ addingBank ? ('COMMON.LOADING' | translate) : ('COMMON.SAVE' | translate) }}
               </button>
-              <button type="button" class="btn btn-secondary" (click)="showAddBankForm = false">
+              <button type="button" class="btn btn-secondary" (click)="showAddBankForm = false; addBankLogoPreview = null; addBankLogoFile = null">
                 {{ 'COMMON.CANCEL' | translate }}
               </button>
             </div>
@@ -73,7 +78,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 
             <div *ngIf="editingBankId !== b.id" class="bank-view">
               <div class="bank-logo-wrap">
-                <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.name_fr" class="bank-logo">
+                <img *ngIf="b.logo" [src]="b.logo" [alt]="b.name_fr" class="bank-logo">
                 <div *ngIf="!b.logo" class="bank-logo-placeholder">🏦</div>
               </div>
               <span class="bank-fr">{{ b.name_fr }}</span>
@@ -89,6 +94,11 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
             </div>
 
             <div *ngIf="editingBankId === b.id" class="bank-edit">
+              <label class="logo-upload-label" title="Changer le logo">
+                <img *ngIf="editBankLogoPreview || editBankCurrentLogo" [src]="editBankLogoPreview || editBankCurrentLogo!" class="logo-preview-sm">
+                <span *ngIf="!editBankLogoPreview && !editBankCurrentLogo" class="logo-upload-placeholder">🏦<br><small>Logo</small></span>
+                <input type="file" accept="image/*" (change)="onEditBankLogo($event)" style="display:none">
+              </label>
               <input type="text" class="form-control" [(ngModel)]="editBankFr" [placeholder]="'SETTINGS.BANK_NAME_FR' | translate">
               <input type="text" class="form-control rtl-input" [(ngModel)]="editBankAr" [placeholder]="'SETTINGS.BANK_NAME_AR' | translate" dir="rtl">
               <div class="input-addon-wrap">
@@ -101,7 +111,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
               <button class="btn btn-primary btn-sm" (click)="saveEditBank(b.id)" [disabled]="savingBank">
                 {{ 'COMMON.SAVE' | translate }}
               </button>
-              <button class="btn btn-secondary btn-sm" (click)="editingBankId = null">
+              <button class="btn btn-secondary btn-sm" (click)="editingBankId = null; editBankLogoFile = null; editBankLogoPreview = null">
                 {{ 'COMMON.CANCEL' | translate }}
               </button>
             </div>
@@ -204,6 +214,13 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
     .form-control:focus { border-color: #2E7D32; }
     .rtl-input { text-align: right; }
 
+    /* Logo upload */
+    .logo-upload-label { width: 52px; height: 52px; border: 2px dashed #ccc; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; overflow: hidden; transition: border-color .15s; }
+    .logo-upload-label:hover { border-color: #2E7D32; }
+    .logo-preview-sm { width: 52px; height: 52px; object-fit: contain; border-radius: 8px; }
+    .logo-upload-placeholder { font-size: 20px; text-align: center; line-height: 1.2; color: #aaa; }
+    .logo-upload-placeholder small { font-size: 9px; }
+
     /* Banks */
     .bank-list { display: flex; flex-direction: column; gap: 6px; }
     .bank-view { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: #fafafa; border-radius: 10px; }
@@ -272,6 +289,11 @@ export class SettingsComponent implements OnInit {
   editBankBalance = 0;
   editBankActive = true;
   addBankForm!: FormGroup;
+  addBankLogoFile: File | null = null;
+  addBankLogoPreview: string | null = null;
+  editBankLogoFile: File | null = null;
+  editBankLogoPreview: string | null = null;
+  editBankCurrentLogo: string | null = null;
 
   // General
   defaultAmount: number | null = null;
@@ -364,20 +386,48 @@ export class SettingsComponent implements OnInit {
   addBank(): void {
     if (this.addBankForm.invalid) return;
     this.addingBank = true;
-    this.bankService.create(this.addBankForm.value).subscribe({
-      next: res => { this.banks.push(res.data); this.addBankForm.reset({ balance: 0 }); this.showAddBankForm = false; this.addingBank = false; },
+    this.bankService.create(this.addBankForm.value, this.addBankLogoFile ?? undefined).subscribe({
+      next: res => { this.banks.push(res.data); this.addBankForm.reset({ balance: 0 }); this.showAddBankForm = false; this.addingBank = false; this.addBankLogoFile = null; this.addBankLogoPreview = null; },
       error: () => { this.addingBank = false; }
     });
   }
 
-  startEditBank(b: Bank): void { this.editingBankId = b.id; this.editBankFr = b.name_fr; this.editBankAr = b.name_ar; this.editBankBalance = b.balance; this.editBankActive = b.is_active; }
+  startEditBank(b: Bank): void {
+    this.editingBankId = b.id;
+    this.editBankFr = b.name_fr;
+    this.editBankAr = b.name_ar;
+    this.editBankBalance = b.balance;
+    this.editBankActive = b.is_active;
+    this.editBankCurrentLogo = b.logo || null;
+    this.editBankLogoFile = null;
+    this.editBankLogoPreview = null;
+  }
 
   saveEditBank(id: number): void {
     this.savingBank = true;
-    this.bankService.update(id, { name_fr: this.editBankFr, name_ar: this.editBankAr, balance: this.editBankBalance, is_active: this.editBankActive }).subscribe({
-      next: res => { const i = this.banks.findIndex(b => b.id === id); if (i !== -1) this.banks[i] = res.data; this.editingBankId = null; this.savingBank = false; },
+    const data = { name_fr: this.editBankFr, name_ar: this.editBankAr, balance: this.editBankBalance, is_active: this.editBankActive };
+    this.bankService.update(id, data, this.editBankLogoFile ?? undefined).subscribe({
+      next: res => { const i = this.banks.findIndex(b => b.id === id); if (i !== -1) this.banks[i] = res.data; this.editingBankId = null; this.savingBank = false; this.editBankLogoFile = null; this.editBankLogoPreview = null; },
       error: () => { this.savingBank = false; }
     });
+  }
+
+  onAddBankLogo(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.addBankLogoFile = file;
+    const reader = new FileReader();
+    reader.onload = e => this.addBankLogoPreview = e.target?.result as string;
+    reader.readAsDataURL(file);
+  }
+
+  onEditBankLogo(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.editBankLogoFile = file;
+    const reader = new FileReader();
+    reader.onload = e => this.editBankLogoPreview = e.target?.result as string;
+    reader.readAsDataURL(file);
   }
 
   confirmDeleteBank(b: Bank): void {
