@@ -46,4 +46,6 @@ export interface ActivityBeneficiary {
   beneficiary_name?: string;
   value_received?: number;
   notes?: string;
+  payment_method?: string;
+  screenshot_url?: string;
 }

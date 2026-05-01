@@ -45,8 +45,15 @@ export class ActivityService {
     return this.http.delete<void>(`${this.api}/${activityId}/photos/${photoId}`);
   }
 
-  addBeneficiary(activityId: number, data: Partial<ActivityBeneficiary>): Observable<any> {
-    return this.http.post(`${this.api}/${activityId}/beneficiaries`, { beneficiaries: [data] });
+  addBeneficiary(activityId: number, data: Partial<ActivityBeneficiary>, screenshot?: File): Observable<any> {
+    const fd = new FormData();
+    fd.append('beneficiary_type', data.beneficiary_type!);
+    fd.append('beneficiary_id', String(data.beneficiary_id));
+    if (data.value_received !== undefined && data.value_received !== null) fd.append('value_received', String(data.value_received));
+    if (data.notes) fd.append('notes', data.notes);
+    if (data.payment_method) fd.append('payment_method', data.payment_method);
+    if (screenshot) fd.append('screenshot', screenshot);
+    return this.http.post(`${this.api}/${activityId}/beneficiaries`, fd);
   }
 
   removeBeneficiary(activityId: number, beneficiaryId: number): Observable<void> {

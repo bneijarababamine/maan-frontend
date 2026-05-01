@@ -152,13 +152,32 @@ import html2canvas from 'html2canvas';
               [placeholder]="'— ' + ('COMMON.ALL' | translate) + ' —'"
               (valueChange)="onBenefEntitySelect($event)">
             </app-searchable-select>
-            <!-- Amount only for financial activities -->
-            <div *ngIf="activity.payment_type === 'financial'" class="amount-wrap">
-              <input type="number" class="form-control" [(ngModel)]="benefAmount"
-                     [placeholder]="'COMMON.AMOUNT' | translate" min="0">
-              <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
-            </div>
-            <button class="btn btn-green" (click)="addBeneficiary()" [disabled]="!benefId || savingBenef">
+            <!-- Amount + payment method for financial activities -->
+            <ng-container *ngIf="activity.payment_type === 'financial'">
+              <div class="amount-wrap">
+                <input type="number" class="form-control" [(ngModel)]="benefAmount"
+                       [placeholder]="'COMMON.AMOUNT' | translate" min="0">
+                <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
+              </div>
+              <div class="field-group">
+                <label class="field-label">{{ 'CONTRIBUTIONS.PAYMENT_METHOD' | translate }} *</label>
+                <app-searchable-select [options]="bankOptions" [value]="benefPaymentMethod"
+                  [placeholder]="'— ' + ('CONTRIBUTIONS.PAYMENT_METHOD' | translate) + ' —'"
+                  (valueChange)="benefPaymentMethod = $event">
+                </app-searchable-select>
+              </div>
+              <!-- Screenshot upload for non-cash -->
+              <div *ngIf="benefPaymentMethod && benefPaymentMethod !== 'cash'" class="field-group">
+                <label class="field-label">{{ 'DONATIONS.SCREENSHOT' | translate }}</label>
+                <label class="screenshot-upload-label">
+                  <input type="file" accept="image/*" hidden (change)="onBenefScreenshot($event)">
+                  <span *ngIf="!benefScreenshotPreview">📎 {{ 'DONATIONS.UPLOAD_SCREENSHOT' | translate }}</span>
+                  <img *ngIf="benefScreenshotPreview" [src]="benefScreenshotPreview" class="screenshot-preview-sm">
+                </label>
+              </div>
+            </ng-container>
+            <button class="btn btn-green" (click)="addBeneficiary()"
+              [disabled]="!benefId || savingBenef || (activity.payment_type === 'financial' && !benefPaymentMethod)">
               {{ savingBenef ? ('COMMON.LOADING' | translate) : ('COMMON.SAVE' | translate) }}
             </button>
           </div>
@@ -171,6 +190,10 @@ import html2canvas from 'html2canvas';
             <div class="benef-info">
               <strong>{{ b.beneficiary_name || ('ID: ' + b.beneficiary_id) }}</strong>
               <span class="benef-type">{{ b.beneficiary_type === 'orphan' ? ('MENU.ORPHANS' | translate) : ('MENU.FAMILIES' | translate) }}</span>
+              <div *ngIf="b.payment_method" class="benef-bank-row">
+                <span class="bank-badge">{{ getBankLabel(b.payment_method) }}</span>
+                <a *ngIf="b.screenshot_url" [href]="b.screenshot_url" target="_blank" class="screenshot-link">📎</a>
+              </div>
             </div>
             <div *ngIf="b.value_received && activity.payment_type === 'financial'" class="benef-amount">
               {{ b.value_received | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}
@@ -261,6 +284,10 @@ import html2canvas from 'html2canvas';
     .btn-edit { background: #7B1FA2; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; cursor: pointer; font-size: 14px; font-weight: 500; }
     .btn-print { background: #fff; border: 1.5px solid #C62828; color: #C62828; border-radius: 8px; padding: 9px 16px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: all .15s; }
     .btn-print:hover { background: #FFEBEE; }
+    .benef-bank-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .screenshot-link { font-size: 14px; text-decoration: none; }
+    .screenshot-upload-label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border: 1.5px dashed #1565C0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1565C0; background: #E3F2FD; }
+    .screenshot-preview-sm { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
     .ms-icon-p { font-family: 'Material Symbols Outlined'; font-style: normal; font-weight: normal; font-variation-settings: 'FILL' 1,'wght' 400; display: inline-block; line-height: 1; font-size: 16px; }
   `]
 })
@@ -274,6 +301,9 @@ export class ActivityDetailComponent implements OnInit {
   benefType: string = 'orphan';
   benefId: number | string | null = null;
   benefAmount: number | null = null;
+  benefPaymentMethod: number | string | null = null;
+  benefScreenshotFile: File | null = null;
+  benefScreenshotPreview: string | null = null;
 
   showItemForm = false;
   savingItem = false;
@@ -361,6 +391,16 @@ export class ActivityDetailComponent implements OnInit {
   onBenefTypeChange(val: number | string | null): void { this.benefType = (val as string) || 'orphan'; this.benefId = null; }
   onBenefEntitySelect(val: number | string | null): void { this.benefId = val; }
 
+  onBenefScreenshot(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.benefScreenshotFile = file;
+    const reader = new FileReader();
+    reader.onload = e => this.benefScreenshotPreview = e.target?.result as string;
+    reader.readAsDataURL(file);
+    (event.target as HTMLInputElement).value = '';
+  }
+
   onAddPhotos(event: Event): void {
     if (!this.activity) return;
     const files = Array.from((event.target as HTMLInputElement).files || []);
@@ -386,10 +426,18 @@ export class ActivityDetailComponent implements OnInit {
     const data: Partial<ActivityBeneficiary> = {
       beneficiary_type: this.benefType as any,
       beneficiary_id: +this.benefId,
-      value_received: this.activity.payment_type === 'financial' ? (this.benefAmount ?? undefined) : undefined
+      value_received: this.activity.payment_type === 'financial' ? (this.benefAmount ?? undefined) : undefined,
+      payment_method: this.activity.payment_type === 'financial' ? (this.benefPaymentMethod as string) : undefined,
     };
-    this.service.addBeneficiary(this.activity.id, data).subscribe({
-      next: () => { this.savingBenef = false; this.showBenefForm = false; this.benefId = null; this.benefAmount = null; this.loadActivity(this.activity!.id); },
+    const screenshot = this.benefPaymentMethod !== 'cash' ? (this.benefScreenshotFile ?? undefined) : undefined;
+    this.service.addBeneficiary(this.activity.id, data, screenshot).subscribe({
+      next: () => {
+        this.savingBenef = false; this.showBenefForm = false;
+        this.benefId = null; this.benefAmount = null;
+        this.benefPaymentMethod = null; this.benefScreenshotFile = null; this.benefScreenshotPreview = null;
+        this.loadActivity(this.activity!.id);
+        this.refreshBanks();
+      },
       error: (err: any) => {
         this.savingBenef = false;
         if (err?.status === 422 && err?.error?.error === 'insufficient_balance') {

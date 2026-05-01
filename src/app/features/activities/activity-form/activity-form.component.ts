@@ -4,8 +4,6 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ActivityService } from '../../../core/services/activity.service';
-import { BankService } from '../../../core/services/bank.service';
-import { Bank } from '../../../core/models/bank.model';
 import { ActivityItem } from '../../../core/models/activity.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
@@ -55,19 +53,6 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
           <div class="form-group full-width">
             <label>{{ 'ACTIVITIES.DESCRIPTION' | translate }}</label>
             <textarea formControlName="description_fr" class="form-control" rows="3"></textarea>
-          </div>
-        </div>
-
-        <!-- Payment method (financial only) -->
-        <div *ngIf="selectedPaymentType === 'financial'" class="payment-section">
-          <h4 class="section-title">{{ 'CONTRIBUTIONS.PAYMENT_METHOD' | translate }}</h4>
-          <div class="payment-methods">
-            <label *ngFor="let b of banks" class="method-card" [class.selected]="selectedPaymentMethod === b.name_fr.toLowerCase()">
-              <input type="radio" [value]="b.name_fr.toLowerCase()" [(ngModel)]="selectedPaymentMethod" [ngModelOptions]="{standalone: true}" hidden>
-              <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.name_fr" class="bank-logo">
-              <span *ngIf="!b.logo" class="cash-icon">💵</span>
-              <span class="method-label">{{ b.name_fr }}</span>
-            </label>
           </div>
         </div>
 
@@ -191,7 +176,6 @@ export class ActivityFormComponent implements OnInit {
   activityId: number | null = null;
   photoFiles: File[] = [];
   photosPreviews: string[] = [];
-  banks: Bank[] = [];
   itemRows: { name: string; quantity: number; unit_value: number }[] = [];
 
   activityTypeOptions: SelectOption[] = [];
@@ -200,7 +184,6 @@ export class ActivityFormComponent implements OnInit {
   selectedActivityType: string = 'other';
   selectedBeneficiaryType: string = 'general';
   selectedPaymentType: string = 'financial';
-  selectedPaymentMethod: string = 'cash';
 
   get itemsTotal(): number {
     return this.itemRows.reduce((s, r) => s + (r.quantity || 0) * (r.unit_value || 0), 0);
@@ -209,7 +192,6 @@ export class ActivityFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private service: ActivityService,
-    private bankService: BankService,
     private translate: TranslateService,
     private router: Router,
     private route: ActivatedRoute
@@ -246,15 +228,6 @@ export class ActivityFormComponent implements OnInit {
       { id: 'in_kind',   label: this.translate.instant('ACTIVITIES.PAYMENT_IN_KIND') }
     ];
 
-    this.bankService.getAll().subscribe({
-      next: res => {
-        this.banks = res.data.filter(b => b.is_active);
-        if (this.banks.length > 0 && !this.selectedPaymentMethod) {
-          this.selectedPaymentMethod = this.banks[0].name_fr.toLowerCase();
-        }
-      }
-    });
-
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEdit = true;
@@ -264,7 +237,6 @@ export class ActivityFormComponent implements OnInit {
         this.selectedActivityType    = d.activity_type || d.type || 'other';
         this.selectedBeneficiaryType = d.beneficiary_type || 'general';
         this.selectedPaymentType     = d.payment_type || 'financial';
-        this.selectedPaymentMethod   = d.payment_method || 'cash';
         this.form.patchValue({
           title_fr:         d.title_fr || d.title || '',
           title_ar:         d.title_ar || '',
@@ -322,9 +294,6 @@ export class ActivityFormComponent implements OnInit {
       if (val !== null && val !== undefined && val !== '') fd.append(k, String(val));
     });
     fd.append('payment_type', this.selectedPaymentType);
-    if (this.selectedPaymentType === 'financial') {
-      fd.append('payment_method', this.selectedPaymentMethod);
-    }
 
     const req = this.isEdit ? this.service.update(this.activityId!, fd) : this.service.create(fd);
     req.subscribe({
