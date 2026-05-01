@@ -77,6 +77,15 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
         </div>
       </form>
     </div>
+
+    <div class="modal-overlay" *ngIf="showPhoneExistsModal" (click)="showPhoneExistsModal = false">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-icon">📵</div>
+        <h3>{{ 'COMMON.PHONE_EXISTS_TITLE' | translate }}</h3>
+        <p>{{ 'COMMON.PHONE_EXISTS_MSG' | translate }}</p>
+        <button class="btn-close-modal" (click)="showPhoneExistsModal = false">{{ 'COMMON.CLOSE' | translate }}</button>
+      </div>
+    </div>
   `,
   styles: [`
     .form-card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
@@ -100,12 +109,19 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
     .btn-secondary { background: #eee; color: #555; }
     textarea.form-control { resize: vertical; }
     @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-box { background: #fff; border-radius: 16px; padding: 32px 28px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+    .modal-icon { font-size: 40px; margin-bottom: 12px; }
+    .modal-box h3 { margin: 0 0 10px; font-size: 17px; color: #C62828; }
+    .modal-box p { margin: 0 0 20px; font-size: 14px; color: #555; line-height: 1.5; }
+    .btn-close-modal { padding: 10px 28px; background: #C62828; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
   `]
 })
 export class DonorFormComponent implements OnInit {
   form!: FormGroup;
   isEdit = false;
   saving = false;
+  showPhoneExistsModal = false;
   donorId: number | null = null;
   typeOptions: SelectOption[] = [];
   wilayaOptions: SelectOption[] = [];
@@ -175,7 +191,12 @@ export class DonorFormComponent implements OnInit {
     const req = this.isEdit ? this.service.update(this.donorId!, this.form.value) : this.service.create(this.form.value);
     req.subscribe({
       next: () => { this.saving = false; this.router.navigate(['/donors']); },
-      error: () => { this.saving = false; }
+      error: (err: any) => {
+        this.saving = false;
+        if (err?.status === 422 && err?.error?.data?.phone) {
+          this.showPhoneExistsModal = true;
+        }
+      }
     });
   }
 }

@@ -289,6 +289,8 @@
     "SUCCESS_SAVE":   "تم الحفظ بنجاح",
     "SUCCESS_DELETE": "تم الحذف بنجاح",
     "ERROR_GENERIC":  "حدث خطأ ما",
+    "PHONE_EXISTS_TITLE": "الرقم موجود مسبقاً",
+    "PHONE_EXISTS_MSG":   "رقم الهاتف هذا مستخدم بالفعل في سجل آخر.",
     "NO_DATA":        "لا توجد بيانات",
     "CONFIRM_DELETE":     "تأكيد الحذف",
     "CONFIRM_DELETE_MSG": "هل أنت متأكد من حذف هذا العنصر؟",

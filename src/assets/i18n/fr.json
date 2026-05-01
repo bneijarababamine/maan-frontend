@@ -289,6 +289,8 @@
     "SUCCESS_SAVE":   "Enregistrement réussi",
     "SUCCESS_DELETE": "Suppression réussie",
     "ERROR_GENERIC":  "Une erreur s'est produite",
+    "PHONE_EXISTS_TITLE": "Numéro déjà existant",
+    "PHONE_EXISTS_MSG":   "Ce numéro de téléphone est déjà utilisé par un autre enregistrement.",
     "NO_DATA":        "Aucune donnée disponible",
     "CONFIRM_DELETE":     "Confirmer la suppression",
     "CONFIRM_DELETE_MSG": "Êtes-vous sûr de vouloir supprimer cet élément ?",
