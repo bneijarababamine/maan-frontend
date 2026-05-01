@@ -99,8 +99,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
                 <span *ngIf="!editBankLogoPreview && !editBankCurrentLogo" class="logo-upload-placeholder">🏦<br><small>Logo</small></span>
                 <input type="file" accept="image/*" (change)="onEditBankLogo($event)" style="display:none">
               </label>
-              <input type="text" class="form-control" [(ngModel)]="editBankFr" [placeholder]="'SETTINGS.BANK_NAME_FR' | translate">
-              <input type="text" class="form-control rtl-input" [(ngModel)]="editBankAr" [placeholder]="'SETTINGS.BANK_NAME_AR' | translate" dir="rtl">
+              <span class="bank-name-locked">{{ b.name_fr }} / {{ b.name_ar }}</span>
               <div class="input-addon-wrap">
                 <input type="number" class="form-control balance-input" [(ngModel)]="editBankBalance" min="0">
                 <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
@@ -228,6 +227,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
     .bank-logo-wrap { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .bank-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }
     .bank-logo-placeholder { font-size: 28px; }
+    .bank-name-locked { font-weight: 700; font-size: 13px; color: #888; font-style: italic; white-space: nowrap; }
     .bank-fr { flex: 1; font-weight: 700; font-size: 14px; color: #222; }
     .bank-ar { flex: 1; text-align: right; font-size: 14px; color: #555; direction: rtl; }
     .bank-balance { font-weight: 700; color: #1565C0; font-size: 15px; white-space: nowrap; }
@@ -405,7 +405,7 @@ export class SettingsComponent implements OnInit {
 
   saveEditBank(id: number): void {
     this.savingBank = true;
-    const data = { name_fr: this.editBankFr, name_ar: this.editBankAr, balance: this.editBankBalance, is_active: this.editBankActive };
+    const data = { balance: this.editBankBalance, is_active: this.editBankActive };
     this.bankService.update(id, data, this.editBankLogoFile ?? undefined).subscribe({
       next: res => { const i = this.banks.findIndex(b => b.id === id); if (i !== -1) this.banks[i] = res.data; this.editingBankId = null; this.savingBank = false; this.editBankLogoFile = null; this.editBankLogoPreview = null; },
       error: () => { this.savingBank = false; }
