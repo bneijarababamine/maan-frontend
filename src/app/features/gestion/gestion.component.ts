@@ -28,7 +28,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
         <div class="balances-grid" *ngIf="!loadingBanks">
           <div *ngFor="let b of banks" class="balance-chip">
             <div class="balance-logo">
-              <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.name_fr" class="b-logo">
+              <img *ngIf="b.logo" [src]="b.logo" [alt]="b.name_fr" class="b-logo">
               <span *ngIf="!b.logo" class="b-logo-text">💵</span>
             </div>
             <div class="balance-info">
@@ -100,13 +100,13 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
             <div *ngIf="editingId !== t.id" class="transfer-row-item">
               <div class="transfer-banks">
                 <span class="transfer-bank">
-                  <img *ngIf="t.from_bank.logo" [src]="'assets/images/' + t.from_bank.logo" class="t-logo">
+                  <img *ngIf="t.from_bank.logo" [src]="t.from_bank.logo" class="t-logo">
                   <span *ngIf="!t.from_bank.logo">💵</span>
                   {{ t.from_bank.name_fr }}
                 </span>
                 <span class="transfer-arrow-sm">→</span>
                 <span class="transfer-bank">
-                  <img *ngIf="t.to_bank.logo" [src]="'assets/images/' + t.to_bank.logo" class="t-logo">
+                  <img *ngIf="t.to_bank.logo" [src]="t.to_bank.logo" class="t-logo">
                   <span *ngIf="!t.to_bank.logo">💵</span>
                   {{ t.to_bank.name_fr }}
                 </span>

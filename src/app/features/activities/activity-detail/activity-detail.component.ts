@@ -55,7 +55,7 @@ import html2canvas from 'html2canvas';
           <div *ngIf="activity.payment_type === 'financial' && activity.payment_method" class="pay-method-row">
             <ng-container *ngFor="let b of banks">
               <ng-container *ngIf="b.name_fr.toLowerCase() === activity.payment_method">
-                <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.name_fr" class="pay-logo">
+                <img *ngIf="b.logo" [src]="b.logo" [alt]="b.name_fr" class="pay-logo">
                 <span>{{ b.name_fr }}</span>
               </ng-container>
             </ng-container>

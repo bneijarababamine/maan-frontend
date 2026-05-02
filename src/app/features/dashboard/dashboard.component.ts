@@ -87,7 +87,7 @@ import { Bank } from '../../core/models/bank.model';
         <div class="bank-cards-grid">
           <div class="bank-bal-card" *ngFor="let b of banks; let i = index" [style.borderLeftColor]="bankColor(i)">
             <div class="bbc-logo">
-              <img *ngIf="b.logo" [src]="'assets/images/' + b.logo" [alt]="b.name_fr" class="bbc-img">
+              <img *ngIf="b.logo" [src]="b.logo" [alt]="b.name_fr" class="bbc-img">
               <span *ngIf="!b.logo" class="bbc-emoji">💵</span>
             </div>
             <div class="bbc-info">
