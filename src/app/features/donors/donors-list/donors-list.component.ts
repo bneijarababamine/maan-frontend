@@ -6,6 +6,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DonorService } from '../../../core/services/donor.service';
 import { Donor } from '../../../core/models/donor.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../../../shared/components/insufficient-balance-modal/insufficient-balance-modal.component';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -18,7 +19,7 @@ interface FilterChip {
 @Component({
   selector: 'app-donors-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent, InsufficientBalanceModalComponent],
   template: `
     <div class="page-header">
       <div style="display:flex;align-items:center;gap:10px">
@@ -103,6 +104,13 @@ interface FilterChip {
       [message]="'DONORS.DELETE_MSG' | translate"
       [confirmLabel]="'COMMON.DELETE' | translate" iconName="person_remove"
       (confirmed)="deleteConfirmed()" (cancelled)="showDelete=false"></app-confirm-dialog>
+
+    <app-insufficient-balance-modal
+      [visible]="showInsufficientModal"
+      [data]="insufficientData"
+      [lang]="currentLang"
+      (close)="showInsufficientModal=false">
+    </app-insufficient-balance-modal>
   `,
   styles: [`
     .search-bar { margin-bottom: 12px; }
@@ -155,7 +163,11 @@ export class DonorsListComponent implements OnInit {
   selectedId: number | null = null;
   openMenu: number | null = null;
   showExportMenu = false;
+  showInsufficientModal = false;
+  insufficientData: InsufficientBalanceData | null = null;
   private debounce: any;
+
+  get currentLang(): string { return this.translate.currentLang || 'fr'; }
 
   readonly filters: FilterChip[] = [
     { key: '',           labelKey: 'DONORS.FILTER_ALL',        color: 'default'   },
@@ -319,7 +331,13 @@ export class DonorsListComponent implements OnInit {
     if (!this.selectedId) return;
     this.svc.delete(this.selectedId).subscribe({
       next: () => { this.showDelete = false; this.load(); },
-      error: () => { this.showDelete = false; }
+      error: (err) => {
+        this.showDelete = false;
+        if (err?.status === 422 && err?.error?.error === 'insufficient_balance') {
+          this.insufficientData = { bank_fr: err.error.bank_fr, bank_ar: err.error.bank_ar, available: err.error.available, required: err.error.required };
+          this.showInsufficientModal = true;
+        }
+      }
     });
   }
 }

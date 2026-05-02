@@ -2,15 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DonationService } from '../../../core/services/donation.service';
 import { Donation } from '../../../core/models/donation.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../../../shared/components/insufficient-balance-modal/insufficient-balance-modal.component';
 
 @Component({
   selector: 'app-donations-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent, InsufficientBalanceModalComponent],
   template: `
     <div class="page-header">
       <div style="display:flex;align-items:center;gap:10px">
@@ -61,6 +62,13 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       [message]="'DONATIONS.DELETE_MSG' | translate"
       [confirmLabel]="'COMMON.DELETE' | translate" iconName="delete"
       (confirmed)="deleteConfirmed()" (cancelled)="showDelete=false"></app-confirm-dialog>
+
+    <app-insufficient-balance-modal
+      [visible]="showInsufficientModal"
+      [data]="insufficientData"
+      [lang]="currentLang"
+      (close)="showInsufficientModal=false">
+    </app-insufficient-balance-modal>
   `,
   styles: [`
     .clickable-row { cursor: pointer; transition: background .12s; }
@@ -76,13 +84,35 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   `]
 })
 export class DonationsListComponent implements OnInit {
-  donations: Donation[] = []; loading=false; showDelete=false; selectedId: number|null=null; openMenu: number|null=null;
-  constructor(private service: DonationService, private router: Router) {}
-  ngOnInit(): void { this.load(); document.addEventListener('click',()=>{this.openMenu=null;}); }
+  donations: Donation[] = [];
+  loading = false;
+  showDelete = false;
+  selectedId: number | null = null;
+  openMenu: number | null = null;
+  showInsufficientModal = false;
+  insufficientData: InsufficientBalanceData | null = null;
+
+  get currentLang(): string { return this.translate.currentLang || 'fr'; }
+
+  constructor(private service: DonationService, private router: Router, private translate: TranslateService) {}
+
+  ngOnInit(): void { this.load(); document.addEventListener('click', () => { this.openMenu = null; }); }
   load(): void { this.loading=true; this.service.getAll().subscribe({next:res=>{this.donations=res.data;this.loading=false;},error:()=>{this.loading=false;}}); }
   goDetail(id: number): void { this.router.navigate(['/donations', id]); }
   goDonor(id: number): void { this.router.navigate(['/donors', id]); }
-  toggleMenu(id:number): void { this.openMenu=this.openMenu===id?null:id; }
-  confirmDelete(d:Donation): void { this.selectedId=d.id; this.showDelete=true; this.openMenu=null; }
-  deleteConfirmed(): void { if(!this.selectedId) return; this.service.delete(this.selectedId).subscribe({next:()=>{this.showDelete=false;this.load();},error:()=>{this.showDelete=false;}}); }
+  toggleMenu(id: number): void { this.openMenu = this.openMenu === id ? null : id; }
+  confirmDelete(d: Donation): void { this.selectedId = d.id; this.showDelete = true; this.openMenu = null; }
+  deleteConfirmed(): void {
+    if (!this.selectedId) return;
+    this.service.delete(this.selectedId).subscribe({
+      next: () => { this.showDelete = false; this.load(); },
+      error: (err) => {
+        this.showDelete = false;
+        if (err?.status === 422 && err?.error?.error === 'insufficient_balance') {
+          this.insufficientData = { bank_fr: err.error.bank_fr, bank_ar: err.error.bank_ar, available: err.error.available, required: err.error.required };
+          this.showInsufficientModal = true;
+        }
+      }
+    });
+  }
 }
