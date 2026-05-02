@@ -11,10 +11,11 @@ export class ContributionService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(params?: { member_id?: number; search?: string }): Observable<{ data: Contribution[] }> {
+  getAll(params?: { member_id?: number; search?: string; payment_method?: string }): Observable<{ data: Contribution[] }> {
     let httpParams = new HttpParams();
     if (params?.member_id) httpParams = httpParams.set('member_id', String(params.member_id));
     if (params?.search) httpParams = httpParams.set('search', params.search);
+    if (params?.payment_method) httpParams = httpParams.set('payment_method', params.payment_method);
     return this.http.get<any>(this.api, { params: httpParams }).pipe(
       map(res => ({ data: res.data?.data ?? res.data ?? [] }))
     );

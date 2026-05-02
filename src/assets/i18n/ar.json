@@ -104,7 +104,8 @@
     "MONTHS_COVERED":   "الأشهر المدفوعة",
     "RECEIPTS":         "وصولات الدفع",
     "DESELECT_ALL":     "إلغاء تحديد الكل",
-    "ADD_SCREENSHOTS":  "إضافة وصولات"
+    "ADD_SCREENSHOTS":  "إضافة وصولات",
+    "ALL_METHODS":      "كل الطرق"
   },
   "DONORS": {
     "TITLE":       "المتبرعون",

@@ -4,6 +4,8 @@ import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { ContributionService } from '../../../core/services/contribution.service';
+import { BankService } from '../../../core/services/bank.service';
+import { Bank } from '../../../core/models/bank.model';
 import { Contribution } from '../../../core/models/contribution.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
@@ -25,6 +27,10 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     <div class="filters-bar">
       <input class="search-input" [(ngModel)]="searchTerm" (input)="onSearch()"
              [placeholder]="'COMMON.SEARCH' | translate">
+      <select class="filter-select" [(ngModel)]="paymentFilter" (change)="load()">
+        <option value="">{{ 'CONTRIBUTIONS.ALL_METHODS' | translate }}</option>
+        <option *ngFor="let b of banks" [value]="b.value">{{ b.label }}</option>
+      </select>
     </div>
 
     <div *ngIf="loading" class="loading-state"><div class="spinner-lg"></div></div>
@@ -42,7 +48,8 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of contributions" class="clickable-row" (click)="goDetail(c.id)">
+          <tr *ngFor="let c of contributions; let i = index; let last = last"
+              class="clickable-row" (click)="goDetail(c.id)">
             <td>
               <a class="table-name" [routerLink]="['/members', c.member_id]">{{ c.member?.full_name || '—' }}</a>
               <div class="text-sm text-muted">{{ c.member?.phone }}</div>
@@ -50,19 +57,18 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
             <td>{{ c.months_count }} mois</td>
             <td class="text-green fw-600">{{ c.total_amount | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}</td>
             <td>
-              <span class="badge" [ngClass]="{
-                'success': c.payment_method === 'cash',
-                'blue':    c.payment_method === 'bankily',
-                'orange':  c.payment_method === 'sadad',
-                'purple':  c.payment_method === 'masrafi'
-              }">{{ c.payment_method | titlecase }}</span>
+              <span class="badge" [ngClass]="badgeClass(c.payment_method)">
+                {{ c.payment_method | titlecase }}
+              </span>
             </td>
             <td class="text-muted text-sm">{{ c.paid_at | date:'dd/MM/yyyy' }}</td>
             <td (click)="$event.stopPropagation()">
-              <div class="action-menu" (click)="toggleMenu(c.id)">
-                <button class="btn-dots">⋮</button>
-                <div class="dropdown" *ngIf="openMenu === c.id" (click)="$event.stopPropagation()">
-                  <a class="dropdown-item" [routerLink]="['/members', c.member_id]">{{ 'COMMON.VIEW' | translate }}</a>
+              <div class="action-menu">
+                <button class="btn-dots" (click)="toggleMenu(c.id, $event)">⋮</button>
+                <div class="dropdown" *ngIf="openMenu === c.id"
+                     [class.drop-up]="dropUp"
+                     (click)="$event.stopPropagation()">
+                  <a class="dropdown-item" [routerLink]="['/contributions', c.id]">{{ 'COMMON.VIEW' | translate }}</a>
                   <a class="dropdown-item" [routerLink]="['/contributions', c.id, 'edit']">{{ 'COMMON.EDIT' | translate }}</a>
                   <a *ngIf="c.screenshot_url" [href]="c.screenshot_url" target="_blank" class="dropdown-item">{{ 'CONTRIBUTIONS.VIEW_RECEIPT' | translate }}</a>
                   <button class="dropdown-item danger" (click)="confirmDelete(c)">{{ 'COMMON.DELETE' | translate }}</button>
@@ -85,6 +91,11 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     </app-confirm-dialog>
   `,
   styles: [`
+    .filters-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
+    .search-input { flex: 1; padding: 9px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+    .search-input:focus { border-color: #2E7D32; }
+    .filter-select { padding: 9px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: #fff; min-width: 160px; cursor: pointer; }
+    .filter-select:focus { border-color: #2E7D32; }
     .clickable-row { cursor: pointer; transition: background .12s; }
     .clickable-row:hover { background: #f9fafb; }
     .action-menu { position: relative; display: inline-block; }
@@ -92,8 +103,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       position: absolute; right: 0; top: 100%;
       background: #fff; border: 1px solid #E0E0E0;
       border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-      z-index: 50; min-width: 130px; overflow: hidden;
+      z-index: 100; min-width: 130px; overflow: hidden;
     }
+    .dropdown.drop-up { top: auto; bottom: 100%; }
     :host-context(body.rtl) .dropdown { right: auto; left: 0; }
     .dropdown-item {
       display: block; width: 100%;
@@ -109,31 +121,67 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 })
 export class ContributionsListComponent implements OnInit {
   contributions: Contribution[] = [];
+  banks: { value: string; label: string }[] = [];
   loading = false;
   searchTerm = '';
+  paymentFilter = '';
   showDelete = false;
   selectedId: number | null = null;
   openMenu: number | null = null;
+  dropUp = false;
   private t: any;
 
-  constructor(private service: ContributionService, private router: Router) {}
+  constructor(
+    private service: ContributionService,
+    private bankService: BankService,
+    private router: Router
+  ) {}
+
   ngOnInit(): void {
     this.load();
+    this.loadBanks();
     document.addEventListener('click', () => { this.openMenu = null; });
+  }
+
+  loadBanks(): void {
+    this.bankService.getAll().subscribe({
+      next: res => {
+        this.banks = res.data
+          .filter((b: Bank) => b.is_active)
+          .map((b: Bank) => ({ value: b.name_fr.toLowerCase(), label: b.name_fr }));
+      }
+    });
   }
 
   load(): void {
     this.loading = true;
-    this.service.getAll(this.searchTerm ? { search: this.searchTerm } : {}).subscribe({
+    const params: any = {};
+    if (this.searchTerm) params.search = this.searchTerm;
+    if (this.paymentFilter) params.payment_method = this.paymentFilter;
+    this.service.getAll(params).subscribe({
       next: res => { this.contributions = res.data; this.loading = false; },
       error: () => { this.loading = false; }
     });
   }
 
   onSearch(): void { clearTimeout(this.t); this.t = setTimeout(() => this.load(), 400); }
+
+  toggleMenu(id: number, event: MouseEvent): void {
+    if (this.openMenu === id) { this.openMenu = null; return; }
+    this.openMenu = id;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dropUp = rect.bottom > window.innerHeight - 180;
+    event.stopPropagation();
+  }
+
+  badgeClass(method: string): string {
+    const m = (method || '').toLowerCase();
+    if (m === 'cash') return 'success';
+    if (m === 'bankily') return 'blue';
+    return 'orange';
+  }
+
   goDetail(id: number): void { this.router.navigate(['/contributions', id]); }
-  goMember(id: number): void { this.router.navigate(['/members', id]); }
-  toggleMenu(id: number): void { this.openMenu = this.openMenu === id ? null : id; }
   confirmDelete(c: Contribution): void { this.selectedId = c.id; this.showDelete = true; this.openMenu = null; }
   deleteConfirmed(): void {
     if (!this.selectedId) return;

@@ -104,7 +104,8 @@
     "MONTHS_COVERED":   "Mois couverts",
     "RECEIPTS":         "Reçus de paiement",
     "DESELECT_ALL":     "Tout désélectionner",
-    "ADD_SCREENSHOTS":  "Ajouter des reçus"
+    "ADD_SCREENSHOTS":  "Ajouter des reçus",
+    "ALL_METHODS":      "Toutes les méthodes"
   },
   "DONORS": {
     "TITLE":       "Donateurs",
