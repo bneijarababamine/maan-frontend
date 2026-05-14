@@ -44,9 +44,9 @@ import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../.
             </td>
             <td class="text-muted text-sm">{{ d.donated_at | date:'dd/MM/yyyy' }}</td>
             <td (click)="$event.stopPropagation()">
-              <div class="action-menu" (click)="toggleMenu(d.id)">
+              <div class="action-menu" (click)="toggleMenu(d.id, $event)">
                 <button class="btn-dots">⋮</button>
-                <div class="dropdown" *ngIf="openMenu===d.id" (click)="$event.stopPropagation()">
+                <div class="dropdown" *ngIf="openMenu===d.id" [class.drop-up]="dropUp" (click)="$event.stopPropagation()">
                   <a *ngIf="d.screenshot_url" [href]="d.screenshot_url" target="_blank" class="dropdown-item">{{ 'CONTRIBUTIONS.VIEW_RECEIPT' | translate }}</a>
                   <button class="dropdown-item danger" (click)="confirmDelete(d)">{{ 'COMMON.DELETE' | translate }}</button>
                 </div>
@@ -75,6 +75,7 @@ import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../.
     .clickable-row:hover { background: #f9fafb; }
     .action-menu { position: relative; display: inline-block; }
     .dropdown { position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 50; min-width: 130px; overflow: hidden; }
+    .dropdown.drop-up { top: auto; bottom: 100%; }
     :host-context(body.rtl) .dropdown { right: auto; left: 0; }
     .dropdown-item { display: block; width: 100%; padding: 9px 14px; font-size: 13px; color: #212121; text-decoration: none; border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; }
     .dropdown-item:hover { background: #F5F5F5; }
@@ -100,7 +101,13 @@ export class DonationsListComponent implements OnInit {
   load(): void { this.loading=true; this.service.getAll().subscribe({next:res=>{this.donations=res.data;this.loading=false;},error:()=>{this.loading=false;}}); }
   goDetail(id: number): void { this.router.navigate(['/donations', id]); }
   goDonor(id: number): void { this.router.navigate(['/donors', id]); }
-  toggleMenu(id: number): void { this.openMenu = this.openMenu === id ? null : id; }
+  dropUp = false;
+  toggleMenu(id: number, event: MouseEvent): void {
+    if (this.openMenu === id) { this.openMenu = null; return; }
+    this.openMenu = id;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dropUp = rect.bottom > window.innerHeight - 180;
+  }
   confirmDelete(d: Donation): void { this.selectedId = d.id; this.showDelete = true; this.openMenu = null; }
   deleteConfirmed(): void {
     if (!this.selectedId) return;

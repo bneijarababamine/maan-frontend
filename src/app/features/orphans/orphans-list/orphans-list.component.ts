@@ -94,9 +94,9 @@ interface FilterChip {
             </td>
             <td><span class="badge" [class]="o.is_active?'success':'secondary'">{{ (o.is_active?'ORPHANS.STATUS_ACTIVE':'ORPHANS.STATUS_INACTIVE')|translate }}</span></td>
             <td (click)="$event.stopPropagation()">
-              <div class="action-menu" (click)="toggleMenu(o.id)">
+              <div class="action-menu" (click)="toggleMenu(o.id, $event)">
                 <button class="btn-dots">⋮</button>
-                <div class="dropdown" *ngIf="openMenu===o.id" (click)="$event.stopPropagation()">
+                <div class="dropdown" *ngIf="openMenu===o.id" [class.drop-up]="dropUp" (click)="$event.stopPropagation()">
                   <a class="dropdown-item" [routerLink]="['/orphans', o.id]">{{ 'COMMON.VIEW' | translate }}</a>
                   <a class="dropdown-item" [routerLink]="['/orphans', o.id, 'edit']">{{ 'COMMON.EDIT' | translate }}</a>
                   <button class="dropdown-item danger" (click)="confirmDelete(o)">{{ 'COMMON.DELETE' | translate }}</button>
@@ -152,6 +152,7 @@ interface FilterChip {
     .clickable-row:hover { background: #f9fafb; }
     .action-menu { position: relative; display: inline-block; }
     .dropdown { position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 50; min-width: 130px; overflow: hidden; }
+    .dropdown.drop-up { top: auto; bottom: 100%; }
     :host-context(body.rtl) .dropdown { right: auto; left: 0; }
     .dropdown-item { display: block; width: 100%; padding: 9px 14px; font-size: 13px; color: #212121; text-decoration: none; border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; }
     .dropdown-item:hover { background: #F5F5F5; }
@@ -341,7 +342,13 @@ export class OrphansListComponent implements OnInit {
     });
   }
 
-  toggleMenu(id: number): void { this.openMenu = this.openMenu === id ? null : id; }
+  dropUp = false;
+  toggleMenu(id: number, event: MouseEvent): void {
+    if (this.openMenu === id) { this.openMenu = null; return; }
+    this.openMenu = id;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dropUp = rect.bottom > window.innerHeight - 180;
+  }
   goDetail(id: number): void { this.router.navigate(['/orphans', id]); }
   confirmDelete(o: Orphan): void { this.selectedId = o.id; this.showDelete = true; this.openMenu = null; }
   deleteConfirmed(): void {
