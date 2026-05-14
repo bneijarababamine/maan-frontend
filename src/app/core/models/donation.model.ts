@@ -6,7 +6,7 @@ export interface Donation {
   donor_id: number;
   donor?: { id: number; full_name: string };
   amount: number;
-  payment_method?: 'cash' | 'bankily' | 'sadad' | 'masrafi';
+  payment_method?: string;
   transaction_ref?: string;
   screenshot_url?: string;
   screenshots?: { url: string; public_id: string }[];

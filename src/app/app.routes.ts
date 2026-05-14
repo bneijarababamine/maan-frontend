@@ -72,6 +72,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/donations/donation-form/donation-form.component').then(m => m.DonationFormComponent)
       },
       {
+        path: 'donations/:id/edit',
+        loadComponent: () => import('./features/donations/donation-edit/donation-edit.component').then(m => m.DonationEditComponent)
+      },
+      {
         path: 'donations/:id',
         loadComponent: () => import('./features/donations/donation-detail/donation-detail.component').then(m => m.DonationDetailComponent)
       },

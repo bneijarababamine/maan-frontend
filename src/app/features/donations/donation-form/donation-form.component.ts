@@ -174,7 +174,7 @@ export class DonationFormComponent implements OnInit {
     const v = this.form.getRawValue();
     fd.append('donor_id', v.donor_id);
     fd.append('type', v.type);
-    fd.append('paid_at', v.paid_at);
+    fd.append('donated_at', v.paid_at);
     if (v.notes) fd.append('notes', v.notes);
     if (v.type === 'money') {
       fd.append('amount', v.amount);

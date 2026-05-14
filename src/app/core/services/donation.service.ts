@@ -28,6 +28,11 @@ export class DonationService {
     return this.http.post<{ data: Donation }>(this.api, formData);
   }
 
+  update(id: number, formData: FormData): Observable<{ data: Donation }> {
+    formData.append('_method', 'PUT');
+    return this.http.post<{ data: Donation }>(`${this.api}/${id}`, formData);
+  }
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
   }
