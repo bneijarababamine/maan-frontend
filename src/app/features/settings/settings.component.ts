@@ -5,7 +5,9 @@ import { TranslateModule } from '@ngx-translate/core';
 import { WilayaService, Wilaya } from '../../core/services/wilaya.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { BankService } from '../../core/services/bank.service';
+import { DonationTypeService } from '../../core/services/donation-type.service';
 import { Bank } from '../../core/models/bank.model';
+import { DonationType } from '../../core/models/donation.model';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -113,6 +115,63 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 
           </div>
           <div *ngIf="banks.length === 0" class="empty">{{ 'SETTINGS.NO_BANKS' | translate }}</div>
+        </div>
+      </div>
+
+      <!-- Donation Types -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">{{ 'SETTINGS.DONATION_TYPES' | translate }}</h2>
+          <button class="btn-add" (click)="showAddTypeForm = !showAddTypeForm">
+            + {{ 'SETTINGS.ADD_DONATION_TYPE' | translate }}
+          </button>
+        </div>
+
+        <div *ngIf="showAddTypeForm" class="add-form">
+          <form [formGroup]="addTypeForm" (ngSubmit)="addDonationType()">
+            <div class="form-row">
+              <input type="text" formControlName="name_fr" class="form-control" [placeholder]="'SETTINGS.WILAYA_FR' | translate">
+              <input type="text" formControlName="name_ar" class="form-control rtl-input" [placeholder]="'SETTINGS.WILAYA_AR' | translate" dir="rtl">
+              <button type="submit" class="btn btn-primary" [disabled]="addTypeForm.invalid || addingType">
+                {{ addingType ? ('COMMON.LOADING' | translate) : ('COMMON.SAVE' | translate) }}
+              </button>
+              <button type="button" class="btn btn-secondary" (click)="showAddTypeForm = false; addTypeForm.reset()">
+                {{ 'COMMON.CANCEL' | translate }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div *ngIf="loadingTypes" class="loading-state"><div class="spinner"></div></div>
+
+        <div class="wilaya-list" *ngIf="!loadingTypes">
+          <div *ngFor="let t of donationTypes" class="wilaya-row">
+            <div *ngIf="editingTypeId !== t.id" class="wilaya-view">
+              <span class="wilaya-fr">{{ t.name_fr }}</span>
+              <span class="wilaya-ar">{{ t.name_ar }}</span>
+              <span class="badge" [class]="t.is_active ? 'success' : 'secondary'">
+                {{ (t.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
+              </span>
+              <div class="wilaya-actions">
+                <button class="btn-icon" (click)="startEditType(t)">✏️</button>
+                <button class="btn-icon danger" (click)="confirmDeleteType(t)">🗑️</button>
+              </div>
+            </div>
+            <div *ngIf="editingTypeId === t.id" class="wilaya-edit">
+              <input type="text" class="form-control" [(ngModel)]="editTypeFr" [placeholder]="'SETTINGS.WILAYA_FR' | translate">
+              <input type="text" class="form-control rtl-input" [(ngModel)]="editTypeAr" [placeholder]="'SETTINGS.WILAYA_AR' | translate" dir="rtl">
+              <label class="toggle-label">
+                <input type="checkbox" [(ngModel)]="editTypeActive"> {{ 'COMMON.ACTIVE' | translate }}
+              </label>
+              <button class="btn btn-primary btn-sm" (click)="saveEditType(t.id)" [disabled]="savingType">
+                {{ 'COMMON.SAVE' | translate }}
+              </button>
+              <button class="btn btn-secondary btn-sm" (click)="editingTypeId = null">
+                {{ 'COMMON.CANCEL' | translate }}
+              </button>
+            </div>
+          </div>
+          <div *ngIf="donationTypes.length === 0" class="empty">{{ 'SETTINGS.NO_DONATION_TYPES' | translate }}</div>
         </div>
       </div>
 
@@ -273,6 +332,18 @@ export class SettingsComponent implements OnInit {
   editActive = true;
   addForm!: FormGroup;
 
+  // Donation Types
+  donationTypes: DonationType[] = [];
+  loadingTypes = false;
+  addingType = false;
+  savingType = false;
+  showAddTypeForm = false;
+  editingTypeId: number | null = null;
+  editTypeFr = '';
+  editTypeAr = '';
+  editTypeActive = true;
+  addTypeForm!: FormGroup;
+
   // Banks
   banks: Bank[] = [];
   loadingBanks = false;
@@ -305,6 +376,7 @@ export class SettingsComponent implements OnInit {
     private wilayaService: WilayaService,
     private settingsService: SettingsService,
     private bankService: BankService,
+    private donationTypeService: DonationTypeService,
     private fb: FormBuilder
   ) {}
 
@@ -320,14 +392,60 @@ export class SettingsComponent implements OnInit {
       balance: [0]
     });
 
+    this.addTypeForm = this.fb.group({
+      name_fr: ['', Validators.required],
+      name_ar: ['']
+    });
+
     this.loadWilayas();
     this.loadBanks();
+    this.loadDonationTypes();
     this.settingsService.getAll().subscribe({
       next: res => {
         const v = res.data?.['default_monthly_amount'];
         this.defaultAmount = v ? +v : null;
       }
     });
+  }
+
+  // ── Donation Types ─────────────────────────────────────
+  loadDonationTypes(): void {
+    this.loadingTypes = true;
+    this.donationTypeService.getAll().subscribe({
+      next: res => { this.donationTypes = res.data; this.loadingTypes = false; },
+      error: () => { this.loadingTypes = false; }
+    });
+  }
+
+  addDonationType(): void {
+    if (this.addTypeForm.invalid) return;
+    this.addingType = true;
+    this.donationTypeService.create(this.addTypeForm.value).subscribe({
+      next: res => { this.donationTypes.push(res.data); this.addTypeForm.reset(); this.showAddTypeForm = false; this.addingType = false; },
+      error: () => { this.addingType = false; }
+    });
+  }
+
+  startEditType(t: DonationType): void { this.editingTypeId = t.id; this.editTypeFr = t.name_fr; this.editTypeAr = t.name_ar || ''; this.editTypeActive = t.is_active; }
+
+  saveEditType(id: number): void {
+    this.savingType = true;
+    this.donationTypeService.update(id, { name_fr: this.editTypeFr, name_ar: this.editTypeAr, is_active: this.editTypeActive }).subscribe({
+      next: res => { const i = this.donationTypes.findIndex(t => t.id === id); if (i !== -1) this.donationTypes[i] = res.data; this.editingTypeId = null; this.savingType = false; },
+      error: () => { this.savingType = false; }
+    });
+  }
+
+  confirmDeleteType(t: DonationType): void {
+    this.deleteDialogTitle = 'SETTINGS.DELETE_DONATION_TYPE';
+    this.deleteDialogMsg   = 'SETTINGS.DELETE_DONATION_TYPE_MSG';
+    this.pendingDelete = () => {
+      this.donationTypeService.delete(t.id).subscribe({
+        next: () => { this.donationTypes = this.donationTypes.filter(x => x.id !== t.id); this.showDeleteDialog = false; },
+        error: () => { this.showDeleteDialog = false; }
+      });
+    };
+    this.showDeleteDialog = true;
   }
 
   // ── Wilayas ────────────────────────────────────────────

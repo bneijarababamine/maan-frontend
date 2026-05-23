@@ -4,14 +4,16 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { DonationService } from '../../../core/services/donation.service';
+import { DonationTypeService } from '../../../core/services/donation-type.service';
 import { Donation } from '../../../core/models/donation.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { PaymentFormComponent, PaymentData, ExistingScreenshot } from '../../../shared/components/payment-form/payment-form.component';
+import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
 
 @Component({
   selector: 'app-donation-edit',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, PaymentFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, PaymentFormComponent, SearchableSelectComponent],
   template: `
     <app-page-header [title]="'DONATIONS.EDIT' | translate" backLink="/donations"></app-page-header>
 
@@ -24,7 +26,7 @@ import { PaymentFormComponent, PaymentData, ExistingScreenshot } from '../../../
           <label>{{ 'DONATIONS.DONOR' | translate }}</label>
           <div class="locked-field">
             <span class="ms-icon">person</span>
-            <span>{{ donation.donor?.full_name || '—' }}</span>
+            <span>{{ donation.donor?.full_name || donation.member?.full_name || '—' }}</span>
           </div>
         </div>
 
@@ -35,6 +37,21 @@ import { PaymentFormComponent, PaymentData, ExistingScreenshot } from '../../../
               <input type="number" formControlName="amount" class="form-control" min="1">
               <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'DONATIONS.YEAR' | translate }} *</label>
+            <input type="number" formControlName="year" class="form-control" min="2000" max="2100">
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'DONATIONS.TYPE' | translate }}</label>
+            <app-searchable-select
+              [options]="donationTypeOptions"
+              [value]="selectedDonationTypeId"
+              [placeholder]="'— ' + ('DONATIONS.NO_TYPE' | translate) + ' —'"
+              (valueChange)="onDonationTypeSelect($event)">
+            </app-searchable-select>
           </div>
 
           <div class="form-group">
@@ -103,19 +120,32 @@ export class DonationEditComponent implements OnInit {
   initialPaymentData: Partial<PaymentData> = {};
   existingScreenshots: ExistingScreenshot[] = [];
   paymentData: PaymentData = { payment_method: 'cash', screenshots: [], keepPublicIds: [] };
+  donationTypeOptions: SelectOption[] = [];
+  selectedDonationTypeId: number | null = null;
 
   constructor(
     private fb: FormBuilder,
     private service: DonationService,
+    private donationTypeService: DonationTypeService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      amount:     [null, [Validators.required, Validators.min(1)]],
-      donated_at: ['', Validators.required],
-      notes:      ['']
+      amount:           [null, [Validators.required, Validators.min(1)]],
+      year:             [new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]],
+      donation_type_id: [null],
+      donated_at:       [''],
+      notes:            ['']
+    });
+
+    this.donationTypeService.getAll().subscribe({
+      next: res => {
+        this.donationTypeOptions = res.data
+          .filter(t => t.is_active)
+          .map(t => ({ id: t.id, label: t.name_fr, sublabel: t.name_ar || '' }));
+      }
     });
 
     const id = +this.route.snapshot.paramMap.get('id')!;
@@ -139,16 +169,25 @@ export class DonationEditComponent implements OnInit {
         this.existingScreenshots = existing;
         this.paymentData.keepPublicIds = existing.map(s => s.public_id).filter(Boolean);
 
+        this.selectedDonationTypeId = res.data.donation_type_id ?? null;
+
         this.form.patchValue({
-          amount:     res.data.amount,
-          donated_at: res.data.donated_at ? res.data.donated_at.split('T')[0] : '',
-          notes:      res.data.notes || ''
+          amount:           res.data.amount,
+          year:             res.data.year ?? new Date().getFullYear(),
+          donation_type_id: res.data.donation_type_id ?? null,
+          donated_at:       res.data.donated_at ? res.data.donated_at.split('T')[0] : '',
+          notes:            res.data.notes || ''
         });
 
         this.loading = false;
       },
       error: () => { this.loading = false; }
     });
+  }
+
+  onDonationTypeSelect(id: number | string | null): void {
+    this.selectedDonationTypeId = id as number | null;
+    this.form.get('donation_type_id')!.setValue(id ?? null);
   }
 
   onPaymentChange(data: PaymentData): void { this.paymentData = data; }
@@ -158,13 +197,17 @@ export class DonationEditComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const fd = new FormData();
+    if (this.donation?.donor_id)  fd.append('donor_id',  String(this.donation.donor_id));
+    if (this.donation?.member_id) fd.append('member_id', String(this.donation.member_id));
     fd.append('amount',          v.amount);
+    fd.append('year',            String(v.year ?? new Date().getFullYear()));
+    if (v.donation_type_id) fd.append('donation_type_id', String(v.donation_type_id));
     fd.append('donated_at',      v.donated_at);
     fd.append('notes',           v.notes || '');
     fd.append('payment_method',  this.paymentData.payment_method);
     if (this.paymentData.transaction_ref) fd.append('transaction_ref', this.paymentData.transaction_ref);
     this.paymentData.screenshots.forEach((f, i) => fd.append(`screenshots[${i}]`, f));
-    this.paymentData.keepPublicIds.forEach((id, i) => fd.append(`keep_public_ids[${i}]`, id));
+    this.paymentData.keepPublicIds.forEach((pid, i) => fd.append(`keep_public_ids[${i}]`, pid));
 
     this.service.update(this.donation!.id, fd).subscribe({
       next: res => { this.saving = false; this.router.navigate(['/donations', res.data.id]); },

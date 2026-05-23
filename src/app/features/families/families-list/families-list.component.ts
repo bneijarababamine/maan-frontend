@@ -77,7 +77,7 @@ interface FilterChip {
             <td (click)="$event.stopPropagation()">
               <div class="action-menu" (click)="toggleMenu(f.id, $event)">
                 <button class="btn-dots">⋮</button>
-                <div class="dropdown" *ngIf="openMenu===f.id" [class.drop-up]="dropUp" (click)="$event.stopPropagation()">
+                <div class="dropdown" *ngIf="openMenu===f.id" [ngStyle]="menuStyle" (click)="$event.stopPropagation()">
                   <a class="dropdown-item" [routerLink]="['/families', f.id]">{{ 'COMMON.VIEW' | translate }}</a>
                   <a class="dropdown-item" [routerLink]="['/families', f.id, 'edit']">{{ 'COMMON.EDIT' | translate }}</a>
                   <button class="dropdown-item danger" (click)="confirmDelete(f)">{{ 'COMMON.DELETE' | translate }}</button>
@@ -121,9 +121,7 @@ interface FilterChip {
     .clickable-row:hover { background: #f9fafb; }
     .inactive-row td { opacity: .6; }
     .action-menu { position: relative; display: inline-block; }
-    .dropdown { position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 50; min-width: 130px; overflow: hidden; }
-    .dropdown.drop-up { top: auto; bottom: 100%; }
-    :host-context(body.rtl) .dropdown { right: auto; left: 0; }
+    .dropdown { position: fixed; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 1000; min-width: 130px; overflow: hidden; }
     .dropdown-item { display: block; width: 100%; padding: 9px 14px; font-size: 13px; color: #212121; text-decoration: none; border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; }
     .dropdown-item:hover { background: #F5F5F5; }
     .dropdown-item.danger { color: #C62828; }
@@ -300,12 +298,18 @@ export class FamiliesListComponent implements OnInit {
     });
   }
 
-  dropUp = false;
+  menuStyle: Record<string, string> = {};
   toggleMenu(id: number, event: MouseEvent): void {
     if (this.openMenu === id) { this.openMenu = null; return; }
     this.openMenu = id;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.dropUp = rect.bottom > window.innerHeight - 180;
+    const right = window.innerWidth - rect.right;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 130) {
+      this.menuStyle = { bottom: (window.innerHeight - rect.top + 4) + 'px', right: right + 'px', top: 'auto' };
+    } else {
+      this.menuStyle = { top: (rect.bottom + 4) + 'px', right: right + 'px', bottom: 'auto' };
+    }
   }
   goDetail(id: number): void { this.router.navigate(['/families', id]); }
   confirmDelete(f: Family): void { this.selectedId = f.id; this.showDelete = true; this.openMenu = null; }

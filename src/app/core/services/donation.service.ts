@@ -11,10 +11,13 @@ export class DonationService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(params?: { donor_id?: number; search?: string }): Observable<{ data: Donation[] }> {
+  getAll(params?: { donor_id?: number; search?: string; donation_type_id?: number; year?: number; payment_method?: string }): Observable<{ data: Donation[] }> {
     let httpParams = new HttpParams();
     if (params?.donor_id) httpParams = httpParams.set('donor_id', String(params.donor_id));
     if (params?.search) httpParams = httpParams.set('search', params.search);
+    if (params?.donation_type_id) httpParams = httpParams.set('donation_type_id', String(params.donation_type_id));
+    if (params?.year) httpParams = httpParams.set('year', String(params.year));
+    if (params?.payment_method) httpParams = httpParams.set('payment_method', params.payment_method);
     return this.http.get<any>(this.api, { params: httpParams }).pipe(
       map(res => ({ data: res.data?.data ?? res.data ?? [] }))
     );

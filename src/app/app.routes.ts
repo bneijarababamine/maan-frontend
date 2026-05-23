@@ -96,6 +96,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orphans/orphan-form/orphan-form.component').then(m => m.OrphanFormComponent)
       },
       {
+        path: 'guardians',
+        loadComponent: () => import('./features/guardians/guardians-list/guardians-list.component').then(m => m.GuardiansListComponent)
+      },
+      {
+        path: 'guardians/new',
+        loadComponent: () => import('./features/guardians/guardian-form/guardian-form.component').then(m => m.GuardianFormComponent)
+      },
+      {
+        path: 'guardians/:id/edit',
+        loadComponent: () => import('./features/guardians/guardian-form/guardian-form.component').then(m => m.GuardianFormComponent)
+      },
+      {
+        path: 'guardians/:guardianId/orphans/new',
+        loadComponent: () => import('./features/orphans/orphan-form/orphan-form.component').then(m => m.OrphanFormComponent)
+      },
+      {
+        path: 'guardians/:id',
+        loadComponent: () => import('./features/guardians/guardian-detail/guardian-detail.component').then(m => m.GuardianDetailComponent)
+      },
+      {
         path: 'families',
         loadComponent: () => import('./features/families/families-list/families-list.component').then(m => m.FamiliesListComponent)
       },

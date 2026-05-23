@@ -4,27 +4,75 @@ import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DonationService } from '../../../core/services/donation.service';
-import { Donation } from '../../../core/models/donation.model';
+import { DonationTypeService } from '../../../core/services/donation-type.service';
+import { Donation, DonationType } from '../../../core/models/donation.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../../../shared/components/insufficient-balance-modal/insufficient-balance-modal.component';
+import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-donations-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent, InsufficientBalanceModalComponent],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent, InsufficientBalanceModalComponent, SearchableSelectComponent],
   template: `
     <div class="page-header">
       <div style="display:flex;align-items:center;gap:10px">
         <h1 class="page-title">{{ 'DONATIONS.TITLE' | translate }}</h1>
         <span class="count-badge">{{ donations.length }}</span>
       </div>
-      <button class="btn btn-primary" routerLink="/donations/new">+ {{ 'DONATIONS.ADD' | translate }}</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" (click)="exportPdf()">{{ 'DONATIONS.EXPORT_PDF' | translate }}</button>
+        <button class="btn btn-primary" routerLink="/donations/new">+ {{ 'DONATIONS.ADD' | translate }}</button>
+      </div>
     </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-item">
+        <app-searchable-select
+          [options]="yearSelectOptions"
+          [value]="filterYear"
+          [placeholder]="'DONATIONS.ALL_YEARS' | translate"
+          (valueChange)="onYearFilter($event)">
+        </app-searchable-select>
+      </div>
+
+      <div class="filter-item">
+        <app-searchable-select
+          [options]="typeSelectOptions"
+          [value]="filterTypeId"
+          [placeholder]="'DONATIONS.ALL_TYPES' | translate"
+          (valueChange)="onTypeFilter($event)">
+        </app-searchable-select>
+      </div>
+
+      <div class="filter-item">
+        <app-searchable-select
+          [options]="paymentSelectOptions"
+          [value]="filterPaymentMethod"
+          [placeholder]="'DONATIONS.ALL_METHODS' | translate"
+          (valueChange)="onPaymentFilter($event)">
+        </app-searchable-select>
+      </div>
+
+      <button *ngIf="filterYear || filterTypeId || filterPaymentMethod" class="btn-clear" (click)="clearFilters()">✕ {{ 'COMMON.RESET' | translate }}</button>
+    </div>
+
+    <!-- Total -->
+    <div class="total-bar" *ngIf="!loading">
+      <span class="total-label">{{ 'DONATIONS.TOTAL' | translate }} :</span>
+      <span class="total-amount">{{ total | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}</span>
+    </div>
+
     <div *ngIf="loading" class="loading-state"><div class="spinner-lg"></div></div>
     <div class="table-card" *ngIf="!loading">
       <table class="data-table">
         <thead><tr>
           <th>{{ 'DONATIONS.DONOR' | translate }}</th>
+          <th>{{ 'DONATIONS.TYPE' | translate }}</th>
+          <th>{{ 'DONATIONS.YEAR' | translate }}</th>
           <th>{{ 'COMMON.AMOUNT' | translate }}</th>
           <th>{{ 'CONTRIBUTIONS.PAYMENT_METHOD' | translate }}</th>
           <th>{{ 'DONATIONS.PAID_AT' | translate }}</th>
@@ -32,7 +80,9 @@ import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../.
         </tr></thead>
         <tbody>
           <tr *ngFor="let d of donations" class="clickable-row" (click)="goDetail(d.id)">
-            <td class="fw-600">{{ d.donor?.full_name || '—' }}</td>
+            <td class="fw-600">{{ donorName(d) }}</td>
+            <td class="text-muted text-sm">{{ d.donation_type?.name_fr || '—' }}</td>
+            <td class="text-muted text-sm">{{ d.year || '—' }}</td>
             <td class="text-green fw-600">{{ d.amount | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}</td>
             <td>
               <span class="badge" [ngClass]="{
@@ -46,14 +96,15 @@ import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../.
             <td (click)="$event.stopPropagation()">
               <div class="action-menu" (click)="toggleMenu(d.id, $event)">
                 <button class="btn-dots">⋮</button>
-                <div class="dropdown" *ngIf="openMenu===d.id" [class.drop-up]="dropUp" (click)="$event.stopPropagation()">
+                <div class="dropdown" *ngIf="openMenu===d.id" [ngStyle]="menuStyle" (click)="$event.stopPropagation()">
                   <a *ngIf="d.screenshot_url" [href]="d.screenshot_url" target="_blank" class="dropdown-item">{{ 'CONTRIBUTIONS.VIEW_RECEIPT' | translate }}</a>
+                  <button class="dropdown-item" (click)="editDonation(d)">{{ 'COMMON.EDIT' | translate }}</button>
                   <button class="dropdown-item danger" (click)="confirmDelete(d)">{{ 'COMMON.DELETE' | translate }}</button>
                 </div>
               </div>
             </td>
           </tr>
-          <tr *ngIf="donations.length===0"><td colspan="5" class="empty-cell">{{ 'DONATIONS.NO_DATA' | translate }}</td></tr>
+          <tr *ngIf="donations.length===0"><td colspan="7" class="empty-cell">{{ 'DONATIONS.NO_DATA' | translate }}</td></tr>
         </tbody>
       </table>
     </div>
@@ -74,41 +125,122 @@ import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../.
     .clickable-row { cursor: pointer; transition: background .12s; }
     .clickable-row:hover { background: #f9fafb; }
     .action-menu { position: relative; display: inline-block; }
-    .dropdown { position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 50; min-width: 130px; overflow: hidden; }
-    .dropdown.drop-up { top: auto; bottom: 100%; }
-    :host-context(body.rtl) .dropdown { right: auto; left: 0; }
+    .dropdown { position: fixed; background: #fff; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 1000; min-width: 130px; overflow: hidden; }
     .dropdown-item { display: block; width: 100%; padding: 9px 14px; font-size: 13px; color: #212121; text-decoration: none; border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; }
     .dropdown-item:hover { background: #F5F5F5; }
     .dropdown-item.danger { color: #C62828; }
     .dropdown-item.danger:hover { background: #FFEBEE; }
     .empty-cell { text-align: center; color: #BDBDBD; padding: 40px; }
+
+    .filters-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-item { width: 190px; }
+    .btn-clear { background: none; border: 1px solid #ddd; color: #888; border-radius: 8px; padding: 8px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .btn-clear:hover { background: #f5f5f5; }
+
+    .total-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 12px 18px; background: #E8F5E9; border-radius: 10px; }
+    .total-label { font-size: 14px; font-weight: 600; color: #555; }
+    .total-amount { font-size: 18px; font-weight: 700; color: #2E7D32; }
+
+    .btn-outline { background: #fff; border: 1.5px solid #1565C0; color: #1565C0; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .btn-outline:hover { background: #E3F2FD; }
   `]
 })
 export class DonationsListComponent implements OnInit {
   donations: Donation[] = [];
+  donationTypes: DonationType[] = [];
   loading = false;
   showDelete = false;
   selectedId: number | null = null;
   openMenu: number | null = null;
+  menuStyle: Record<string, string> = {};
   showInsufficientModal = false;
   insufficientData: InsufficientBalanceData | null = null;
 
+  filterYear: string | null = null;
+  filterTypeId: string | null = null;
+  filterPaymentMethod: string | null = null;
+
+  yearSelectOptions: SelectOption[] = [];
+  typeSelectOptions: SelectOption[] = [];
+  paymentSelectOptions: SelectOption[] = [
+    { id: 'cash',    label: 'Cash' },
+    { id: 'bankily', label: 'Bankily' },
+    { id: 'masrafi', label: 'Masrafi' },
+    { id: 'sadad',   label: 'Sadad' },
+  ];
+
   get currentLang(): string { return this.translate.currentLang || 'fr'; }
+  get total(): number { return this.donations.reduce((sum, d) => sum + (d.amount || 0), 0); }
 
-  constructor(private service: DonationService, private router: Router, private translate: TranslateService) {}
+  constructor(
+    private service: DonationService,
+    private donationTypeService: DonationTypeService,
+    private router: Router,
+    private translate: TranslateService
+  ) {}
 
-  ngOnInit(): void { this.load(); document.addEventListener('click', () => { this.openMenu = null; }); }
-  load(): void { this.loading=true; this.service.getAll().subscribe({next:res=>{this.donations=res.data;this.loading=false;},error:()=>{this.loading=false;}}); }
+  ngOnInit(): void {
+    const currentYear = new Date().getFullYear();
+    this.yearSelectOptions = Array.from({ length: 10 }, (_, i) => {
+      const y = currentYear - i;
+      return { id: String(y), label: String(y) };
+    });
+
+    this.donationTypeService.getAll().subscribe({
+      next: res => {
+        this.donationTypes = res.data;
+        this.typeSelectOptions = res.data.map(t => ({ id: String(t.id), label: t.name_fr, sublabel: t.name_ar || '' }));
+      }
+    });
+
+    this.load();
+    document.addEventListener('click', () => { this.openMenu = null; });
+  }
+
+  load(): void {
+    this.loading = true;
+    const params: any = {};
+    if (this.filterYear)          params.year = +this.filterYear;
+    if (this.filterTypeId)        params.donation_type_id = +this.filterTypeId;
+    if (this.filterPaymentMethod) params.payment_method = this.filterPaymentMethod;
+    this.service.getAll(params).subscribe({
+      next: res => { this.donations = res.data; this.loading = false; },
+      error: () => { this.loading = false; }
+    });
+  }
+
+  onYearFilter(val: string | number | null): void    { this.filterYear = val ? String(val) : null; this.load(); }
+  onTypeFilter(val: string | number | null): void    { this.filterTypeId = val ? String(val) : null; this.load(); }
+  onPaymentFilter(val: string | number | null): void { this.filterPaymentMethod = val ? String(val) : null; this.load(); }
+
+  clearFilters(): void {
+    this.filterYear = null;
+    this.filterTypeId = null;
+    this.filterPaymentMethod = null;
+    this.load();
+  }
+
   goDetail(id: number): void { this.router.navigate(['/donations', id]); }
-  goDonor(id: number): void { this.router.navigate(['/donors', id]); }
-  dropUp = false;
+  editDonation(d: Donation): void { this.router.navigate(['/donations', d.id, 'edit']); this.openMenu = null; }
+
+  donorName(d: Donation): string {
+    return d.donor?.full_name || d.member?.full_name || '—';
+  }
+
   toggleMenu(id: number, event: MouseEvent): void {
     if (this.openMenu === id) { this.openMenu = null; return; }
     this.openMenu = id;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.dropUp = rect.bottom > window.innerHeight - 180;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 140) {
+      this.menuStyle = { bottom: `${window.innerHeight - rect.top}px`, right: `${window.innerWidth - rect.right}px` };
+    } else {
+      this.menuStyle = { top: `${rect.bottom + 4}px`, right: `${window.innerWidth - rect.right}px` };
+    }
   }
+
   confirmDelete(d: Donation): void { this.selectedId = d.id; this.showDelete = true; this.openMenu = null; }
+
   deleteConfirmed(): void {
     if (!this.selectedId) return;
     this.service.delete(this.selectedId).subscribe({
@@ -121,5 +253,60 @@ export class DonationsListComponent implements OnInit {
         }
       }
     });
+  }
+
+  exportPdf(): void {
+    const doc = new jsPDF();
+
+    const title = 'Liste des Dons';
+    const subtitle = this.buildSubtitle();
+    const totalStr = `Total : ${this.total.toLocaleString('fr-FR')} MRU`;
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, 18);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    if (subtitle) doc.text(subtitle, 14, 26);
+    doc.setTextColor(0);
+
+    const rows = this.donations.map(d => [
+      this.donorName(d),
+      d.donation_type?.name_fr || '—',
+      d.year ? String(d.year) : '—',
+      `${Number(d.amount).toLocaleString('fr-FR')} MRU`,
+      d.payment_method || '—',
+      d.donated_at ? new Date(d.donated_at).toLocaleDateString('fr-FR') : '—',
+    ]);
+
+    autoTable(doc, {
+      startY: subtitle ? 32 : 26,
+      head: [['Donateur', 'Type', 'Année', 'Montant', 'Mode', 'Date']],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [21, 101, 192], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 248, 255] },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY ?? 30;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(46, 125, 50);
+    doc.text(totalStr, 14, finalY + 10);
+
+    doc.save(`dons-${Date.now()}.pdf`);
+  }
+
+  private buildSubtitle(): string {
+    const parts: string[] = [];
+    if (this.filterYear) parts.push(`Année ${this.filterYear}`);
+    if (this.filterTypeId) {
+      const t = this.donationTypes.find(x => String(x.id) === this.filterTypeId);
+      if (t) parts.push(`Type : ${t.name_fr}`);
+    }
+    if (this.filterPaymentMethod) parts.push(`Mode : ${this.filterPaymentMethod}`);
+    return parts.join(' | ');
   }
 }
