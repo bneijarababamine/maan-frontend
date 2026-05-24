@@ -355,7 +355,7 @@ export class MembersListComponent implements OnInit {
             sliceCanvas.width  = canvas.width;
             sliceCanvas.height = Math.min(sliceH, canvas.height - yOffset);
             sliceCanvas.getContext('2d')!.drawImage(canvas, 0, -yOffset);
-            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, sliceCanvas.height / ratio);
             yOffset += sliceH;
             if (yOffset < canvas.height) pdf.addPage();
           }
@@ -404,7 +404,7 @@ export class MembersListComponent implements OnInit {
             const sc = document.createElement('canvas');
             sc.width = canvas.width; sc.height = Math.min(sliceH, canvas.height - yOff);
             sc.getContext('2d')!.drawImage(canvas, 0, -yOff);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
             yOff += sliceH; if (yOff < canvas.height) pdf.addPage();
           }
         }

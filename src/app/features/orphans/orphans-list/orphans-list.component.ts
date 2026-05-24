@@ -588,7 +588,7 @@ export class OrphansListComponent implements OnInit {
             sc.width = canvas.width;
             sc.height = Math.min(sliceH, canvas.height - y);
             sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
             y += sliceH;
             if (y < canvas.height) pdf.addPage();
           }
@@ -663,7 +663,7 @@ export class OrphansListComponent implements OnInit {
             const sc = document.createElement('canvas');
             sc.width = canvas.width; sc.height = Math.min(sliceH, canvas.height - y);
             sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
             y += sliceH; if (y < canvas.height) pdf.addPage();
           }
         }
@@ -708,7 +708,7 @@ export class OrphansListComponent implements OnInit {
             const sc = document.createElement('canvas');
             sc.width = canvas.width; sc.height = Math.min(sliceH, canvas.height - y);
             sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
             y += sliceH; if (y < canvas.height) pdf.addPage();
           }
         }
