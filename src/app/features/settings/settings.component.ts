@@ -37,6 +37,30 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
             <div class="saved-msg" *ngIf="savedAmount">✓</div>
           </div>
         </div>
+
+        <div class="setting-row" style="border-top:1px solid #eee;padding-top:18px;margin-top:6px">
+          <div class="setting-info">
+            <div class="setting-label">{{ 'SETTINGS.AGE_LIMITS' | translate }}</div>
+            <div class="setting-desc">{{ 'SETTINGS.AGE_LIMIT_DESC' | translate }}</div>
+          </div>
+          <div class="setting-control" style="display:flex;gap:12px;align-items:flex-start">
+            <div>
+              <div style="font-size:12px;color:#777;margin-bottom:4px">{{ 'SETTINGS.AGE_LIMIT_MALE' | translate }}</div>
+              <div class="input-addon-wrap">
+                <input type="number" class="form-control" [(ngModel)]="ageLimitMale" min="1" max="99" style="width:80px" (blur)="saveAgeLimit('age_limit_male', ageLimitMale)">
+                <span class="addon">{{ 'ORPHANS.AGE' | translate }}</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:#777;margin-bottom:4px">{{ 'SETTINGS.AGE_LIMIT_FEMALE' | translate }}</div>
+              <div class="input-addon-wrap">
+                <input type="number" class="form-control" [(ngModel)]="ageLimitFemale" min="1" max="99" style="width:80px" (blur)="saveAgeLimit('age_limit_female', ageLimitFemale)">
+                <span class="addon">{{ 'ORPHANS.AGE' | translate }}</span>
+              </div>
+            </div>
+            <div class="saved-msg" *ngIf="savedAgeLimit" style="align-self:center;margin-top:20px">✓</div>
+          </div>
+        </div>
       </div>
 
       <!-- Banks -->
@@ -366,6 +390,11 @@ export class SettingsComponent implements OnInit {
   defaultAmount: number | null = null;
   savedAmount = false;
 
+  // Age limits
+  ageLimitMale: number | null = null;
+  ageLimitFemale: number | null = null;
+  savedAgeLimit = false;
+
   // Shared confirm dialog
   showDeleteDialog = false;
   deleteDialogTitle = '';
@@ -402,8 +431,10 @@ export class SettingsComponent implements OnInit {
     this.loadDonationTypes();
     this.settingsService.getAll().subscribe({
       next: res => {
-        const v = res.data?.['default_monthly_amount'];
-        this.defaultAmount = v ? +v : null;
+        const d = res.data ?? {};
+        this.defaultAmount  = d['default_monthly_amount'] ? +d['default_monthly_amount'] : null;
+        this.ageLimitMale   = d['age_limit_male']   ? +d['age_limit_male']   : 18;
+        this.ageLimitFemale = d['age_limit_female'] ? +d['age_limit_female'] : 21;
       }
     });
   }
@@ -563,6 +594,13 @@ export class SettingsComponent implements OnInit {
     if (this.defaultAmount === null) return;
     this.settingsService.set('default_monthly_amount', String(this.defaultAmount)).subscribe({
       next: () => { this.savedAmount = true; setTimeout(() => this.savedAmount = false, 2000); }
+    });
+  }
+
+  saveAgeLimit(key: string, value: number | null): void {
+    if (value === null) return;
+    this.settingsService.set(key, String(value)).subscribe({
+      next: () => { this.savedAgeLimit = true; setTimeout(() => this.savedAgeLimit = false, 2000); }
     });
   }
 }

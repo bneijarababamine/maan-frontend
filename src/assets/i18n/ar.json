@@ -36,7 +36,11 @@
     "ADD_DONATION_TYPE":        "إضافة نوع",
     "NO_DONATION_TYPES":        "لا توجد أنواع تبرعات",
     "DELETE_DONATION_TYPE":     "حذف نوع التبرع",
-    "DELETE_DONATION_TYPE_MSG": "هل تريد حقاً حذف هذا النوع؟"
+    "DELETE_DONATION_TYPE_MSG": "هل تريد حقاً حذف هذا النوع؟",
+    "AGE_LIMITS":              "حدود سن الأيتام",
+    "AGE_LIMIT_DESC":          "الحد الأقصى للسن حسب الجنس",
+    "AGE_LIMIT_MALE":          "حد الذكور (سنة)",
+    "AGE_LIMIT_FEMALE":        "حد الإناث (سنة)"
   },
   "AUTH": {
     "LOGIN":    "تسجيل الدخول",
@@ -196,7 +200,9 @@
     "FILTER_ACTIVE":      "النشطون",
     "FILTER_INACTIVE":    "غير النشطين",
     "FILTER_NEAR_18":     "قريبون من 18",
-    "FILTER_AGED_OUT":    "تجاوزوا 18",
+    "FILTER_AGED_OUT":      "تجاوزوا 18",
+    "FILTER_WITHIN_LIMIT":  "ضمن حدود السن",
+    "EXCEEDS_LIMIT":        "تجاوز الحد",
     "TAB_LIST":           "الأيتام",
     "TAB_BY_GUARDIAN":    "حسب الولي",
     "FULL_NAME":          "الاسم الكامل",

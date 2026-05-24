@@ -36,7 +36,11 @@
     "ADD_DONATION_TYPE":        "Ajouter un type",
     "NO_DONATION_TYPES":        "Aucun type de don",
     "DELETE_DONATION_TYPE":     "Supprimer le type de don",
-    "DELETE_DONATION_TYPE_MSG": "Voulez-vous vraiment supprimer ce type de don ?"
+    "DELETE_DONATION_TYPE_MSG": "Voulez-vous vraiment supprimer ce type de don ?",
+    "AGE_LIMITS":              "Limites d'âge des orphelins",
+    "AGE_LIMIT_DESC":          "Âge maximum par genre",
+    "AGE_LIMIT_MALE":          "Limite garçons (ans)",
+    "AGE_LIMIT_FEMALE":        "Limite filles (ans)"
   },
   "AUTH": {
     "LOGIN":    "Connexion",
@@ -196,7 +200,9 @@
     "FILTER_ACTIVE":      "Actifs",
     "FILTER_INACTIVE":    "Inactifs",
     "FILTER_NEAR_18":     "Proche 18 ans",
-    "FILTER_AGED_OUT":    "Dépassé 18 ans",
+    "FILTER_AGED_OUT":      "Dépassé 18 ans",
+    "FILTER_WITHIN_LIMIT":  "Dans les limites d'âge",
+    "EXCEEDS_LIMIT":        "Dépasse la limite",
     "TAB_LIST":           "Orphelins",
     "TAB_BY_GUARDIAN":    "Par tuteur",
     "FULL_NAME":          "Nom complet",

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrphanService } from '../../../core/services/orphan.service';
 import { GuardianService, Guardian } from '../../../core/services/guardian.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { Orphan } from '../../../core/models/orphan.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { forkJoin } from 'rxjs';
@@ -16,7 +17,7 @@ import html2canvas from 'html2canvas';
 interface FilterChip {
   key: string;
   labelKey: string;
-  color: 'default' | 'success' | 'secondary' | 'orange' | 'danger';
+  color: 'default' | 'success' | 'secondary' | 'orange' | 'danger' | 'blue';
 }
 
 @Component({
@@ -110,6 +111,7 @@ interface FilterChip {
                 <div>{{ o.age }} {{ 'COMMON.YEARS' | translate }}</div>
                 <span *ngIf="o.is_adult" class="badge danger">{{ 'ORPHANS.AGED_OUT' | translate }}</span>
                 <span *ngIf="!o.is_adult && (o.months_until_18||99)<=6" class="badge warning">{{ o.months_until_18 }} {{ 'COMMON.MONTHS' | translate }}</span>
+                <span *ngIf="exceedsLimit(o)" class="badge orange">{{ 'ORPHANS.EXCEEDS_LIMIT' | translate }}</span>
               </td>
               <td><span class="badge" [class]="o.gender==='male'?'blue':'purple'">{{ (o.gender==='male'?'ORPHANS.MALE':'ORPHANS.FEMALE')|translate }}</span></td>
               <td>
@@ -399,12 +401,16 @@ export class OrphansListComponent implements OnInit {
   pdfGuardianLoading = false;
   private guardianDebounce: any;
 
+  ageLimitMale   = 18;
+  ageLimitFemale = 21;
+
   readonly filters: FilterChip[] = [
-    { key: '',           labelKey: 'ORPHANS.FILTER_ALL',      color: 'default'   },
-    { key: 'active',     labelKey: 'ORPHANS.FILTER_ACTIVE',   color: 'success'   },
-    { key: 'inactive',   labelKey: 'ORPHANS.FILTER_INACTIVE', color: 'secondary' },
-    { key: 'near_adult', labelKey: 'ORPHANS.FILTER_NEAR_18',  color: 'orange'    },
-    { key: 'aged_out',   labelKey: 'ORPHANS.FILTER_AGED_OUT', color: 'danger'    },
+    { key: '',             labelKey: 'ORPHANS.FILTER_ALL',          color: 'default'   },
+    { key: 'active',       labelKey: 'ORPHANS.FILTER_ACTIVE',       color: 'success'   },
+    { key: 'inactive',     labelKey: 'ORPHANS.FILTER_INACTIVE',     color: 'secondary' },
+    { key: 'near_adult',   labelKey: 'ORPHANS.FILTER_NEAR_18',      color: 'orange'    },
+    { key: 'aged_out',     labelKey: 'ORPHANS.FILTER_AGED_OUT',     color: 'danger'    },
+    { key: 'within_limit', labelKey: 'ORPHANS.FILTER_WITHIN_LIMIT', color: 'blue'      },
   ];
 
   get near18Count(): number { return this.orphans.filter(o => !o.is_adult && (o.months_until_18 || 99) <= 6).length; }
@@ -412,13 +418,26 @@ export class OrphansListComponent implements OnInit {
   constructor(
     private svc: OrphanService,
     private guardianSvc: GuardianService,
+    private settingsSvc: SettingsService,
     private router: Router,
     private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
     this.loadOrphans();
+    this.settingsSvc.getAll().subscribe({
+      next: res => {
+        const d = res.data ?? {};
+        if (d['age_limit_male'])   this.ageLimitMale   = +d['age_limit_male'];
+        if (d['age_limit_female']) this.ageLimitFemale = +d['age_limit_female'];
+      }
+    });
     document.addEventListener('click', () => { this.openMenu = null; this.showExportMenu = false; });
+  }
+
+  exceedsLimit(o: Orphan): boolean {
+    const limit = o.gender === 'male' ? this.ageLimitMale : this.ageLimitFemale;
+    return o.age > limit;
   }
 
   switchTab(tab: 'orphans' | 'guardians'): void {
