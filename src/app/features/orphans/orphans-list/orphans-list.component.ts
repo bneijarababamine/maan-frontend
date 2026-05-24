@@ -178,46 +178,54 @@ interface FilterChip {
 
           <!-- Sous-liste des enfants -->
           <div class="children-list" *ngIf="expandedGuardianId === g.id">
-            <div *ngIf="!g.orphans || g.orphans.length === 0" class="no-children">
+            <div *ngIf="!g.orphans" class="no-children">
               {{ 'ORPHANS.NO_CHILDREN' | translate }}
               <a [routerLink]="['/guardians', g.id, 'orphans', 'new']" class="link-add">{{ 'ORPHANS.ADD_FIRST_CHILD' | translate }} →</a>
             </div>
-            <table *ngIf="g.orphans && g.orphans.length > 0" class="children-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>{{ 'ORPHANS.FULL_NAME' | translate }}</th>
-                  <th>{{ 'ORPHANS.GENDER' | translate }}</th>
-                  <th>{{ 'ORPHANS.BIRTH_YEAR' | translate }}</th>
-                  <th>{{ 'ORPHANS.AGE' | translate }}</th>
-                  <th>{{ 'ORPHANS.SCHOOL' | translate }}</th>
-                  <th>{{ 'COMMON.STATUS' | translate }}</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let o of g.orphans; let i = index" [class.inactive-row]="!o.is_active">
-                  <td class="td-num">{{ i + 1 }}</td>
-                  <td class="td-name">{{ o.display_name }}</td>
-                  <td>
-                    <span class="gender-chip" [class.male]="o.gender==='male'" [class.female]="o.gender==='female'">
-                      {{ (o.gender === 'male' ? 'ORPHANS.MALE' : 'ORPHANS.FEMALE') | translate }}
-                    </span>
-                  </td>
-                  <td class="mono">{{ o.birth_year }}</td>
-                  <td>{{ o.age }} {{ 'COMMON.YEARS' | translate }}</td>
-                  <td>{{ o.school_name || '—' }}</td>
-                  <td>
-                    <span class="dot" [class.dot-on]="o.is_active" [class.dot-off]="!o.is_active"></span>
-                    {{ (o.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
-                  </td>
-                  <td class="td-acts">
-                    <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm">👁️</button>
-                    <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm">✏️</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <ng-container *ngIf="g.orphans">
+              <div *ngIf="filteredGuardianOrphans(g.orphans).length === 0" class="no-children">
+                {{ 'ORPHANS.NO_DATA' | translate }}
+              </div>
+              <table *ngIf="filteredGuardianOrphans(g.orphans).length > 0" class="children-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>{{ 'ORPHANS.FULL_NAME' | translate }}</th>
+                    <th>{{ 'ORPHANS.GENDER' | translate }}</th>
+                    <th>{{ 'ORPHANS.BIRTH_YEAR' | translate }}</th>
+                    <th>{{ 'ORPHANS.AGE' | translate }}</th>
+                    <th>{{ 'ORPHANS.SCHOOL' | translate }}</th>
+                    <th>{{ 'COMMON.STATUS' | translate }}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let o of filteredGuardianOrphans(g.orphans); let i = index" [class.inactive-row]="!o.is_active">
+                    <td class="td-num">{{ i + 1 }}</td>
+                    <td class="td-name">{{ o.display_name }}</td>
+                    <td>
+                      <span class="gender-chip" [class.male]="o.gender==='male'" [class.female]="o.gender==='female'">
+                        {{ (o.gender === 'male' ? 'ORPHANS.MALE' : 'ORPHANS.FEMALE') | translate }}
+                      </span>
+                    </td>
+                    <td class="mono">{{ o.birth_year }}</td>
+                    <td>
+                      {{ o.age }} {{ 'COMMON.YEARS' | translate }}
+                      <span *ngIf="exceedsLimit(o)" class="badge orange" style="font-size:10px;padding:2px 6px;margin-top:2px;display:block;width:fit-content">{{ 'ORPHANS.EXCEEDS_LIMIT' | translate }}</span>
+                    </td>
+                    <td>{{ o.school_name || '—' }}</td>
+                    <td>
+                      <span class="dot" [class.dot-on]="o.is_active" [class.dot-off]="!o.is_active"></span>
+                      {{ (o.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
+                    </td>
+                    <td class="td-acts">
+                      <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm">👁️</button>
+                      <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm">✏️</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </ng-container>
           </div>
         </div>
 
@@ -438,6 +446,22 @@ export class OrphansListComponent implements OnInit {
   exceedsLimit(o: Orphan): boolean {
     const limit = o.gender === 'male' ? this.ageLimitMale : this.ageLimitFemale;
     return o.age > limit;
+  }
+
+  filteredGuardianOrphans(orphans: any[]): any[] {
+    if (!orphans) return [];
+    let result = orphans;
+    if (this.genderFilter) {
+      result = result.filter(o => o.gender === this.genderFilter);
+    }
+    switch (this.activeFilter) {
+      case 'active':       result = result.filter(o => o.is_active); break;
+      case 'inactive':     result = result.filter(o => !o.is_active); break;
+      case 'aged_out':     result = result.filter(o => o.is_adult); break;
+      case 'near_adult':   result = result.filter(o => !o.is_adult && (o.months_until_18 || 99) <= 6); break;
+      case 'within_limit': result = result.filter(o => !this.exceedsLimit(o)); break;
+    }
+    return result;
   }
 
   switchTab(tab: 'orphans' | 'guardians'): void {
