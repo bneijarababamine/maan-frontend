@@ -101,7 +101,7 @@ interface FilterChip {
             <tr *ngFor="let o of orphans" class="clickable-row" (click)="goDetail(o.id)">
               <td>
                 <div class="orphan-cell">
-                  <img *ngIf="o.photo_url" [src]="o.photo_url" class="o-avatar" [alt]="o.display_name">
+                  <img *ngIf="o.photo_url" [src]="o.photo_url" class="o-avatar" [alt]="o.full_name">
                   <span *ngIf="!o.photo_url" class="o-initials">{{ o.full_name.charAt(0) }}</span>
                   <span class="fw-600">{{ o.display_name }}</span>
                 </div>

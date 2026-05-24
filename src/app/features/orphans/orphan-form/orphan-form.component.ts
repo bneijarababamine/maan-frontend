@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { OrphanService } from '../../../core/services/orphan.service';
 import { GuardianService } from '../../../core/services/guardian.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -157,8 +157,7 @@ export class OrphanFormComponent implements OnInit {
   get displayNamePreview(): string {
     const name = this.form.get('full_name')?.value?.trim();
     if (!name || !this.fatherName) return name || '';
-    const connector = this.selectedGender === 'male' ? 'ould' : 'mint';
-    return `${name} ${connector} ${this.fatherName}`;
+    return `${name} ${this.fatherName}`;
   }
 
   get backLink(): string {
@@ -169,7 +168,6 @@ export class OrphanFormComponent implements OnInit {
     private fb: FormBuilder,
     private orphanService: OrphanService,
     private guardianService: GuardianService,
-    private translate: TranslateService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -192,7 +190,6 @@ export class OrphanFormComponent implements OnInit {
     if (guardianIdParam) {
       this.guardianId = +guardianIdParam;
       this.form.get('guardian_id')!.setValue(this.guardianId);
-      // Charger le father_name depuis le tuteur pour la prévisualisation
       this.guardianService.getById(this.guardianId).subscribe({
         next: res => { this.fatherName = res.data.father_name || ''; }
       });
