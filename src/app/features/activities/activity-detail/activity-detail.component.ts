@@ -8,6 +8,7 @@ import { Activity, ActivityBeneficiary, ActivityItem } from '../../../core/model
 import { OrphanService } from '../../../core/services/orphan.service';
 import { FamilyService } from '../../../core/services/family.service';
 import { BankService } from '../../../core/services/bank.service';
+import { GuardianService } from '../../../core/services/guardian.service';
 import { Orphan } from '../../../core/models/orphan.model';
 import { Family } from '../../../core/models/family.model';
 import { Bank } from '../../../core/models/bank.model';
@@ -331,9 +332,11 @@ export class ActivityDetailComponent implements OnInit {
   benefTypeOptions: SelectOption[] = [];
   orphanOptions: SelectOption[] = [];
   familyOptions: SelectOption[] = [];
+  guardianOptions: SelectOption[] = [];
 
   get currentEntityOptions(): SelectOption[] {
-    return this.benefType === 'orphan' ? this.orphanOptions : this.familyOptions;
+    if (this.benefType === 'orphan') return this.guardianOptions;
+    return this.familyOptions;
   }
 
   private typeIcons: Record<string, string> = {
@@ -346,6 +349,7 @@ export class ActivityDetailComponent implements OnInit {
     private orphanService: OrphanService,
     private familyService: FamilyService,
     private bankService: BankService,
+    private guardianService: GuardianService,
     private translate: TranslateService
   ) {}
 
@@ -358,8 +362,11 @@ export class ActivityDetailComponent implements OnInit {
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.loadActivity(id);
 
-    this.orphanService.getAll({ status: 'active' }).subscribe({
-      next: r => this.orphanOptions = (r.data as Orphan[]).map(o => ({ id: o.id, label: o.full_name })),
+    this.guardianService.getAll().subscribe({
+      next: r => this.guardianOptions = r.data.map(g => ({
+        id: g.id,
+        label: g.father_name ? `${g.name} — ${g.father_name}` : g.name
+      })),
       error: () => {}
     });
     this.familyService.getAll({ is_active: true }).subscribe({
@@ -423,6 +430,51 @@ export class ActivityDetailComponent implements OnInit {
   addBeneficiary(): void {
     if (!this.activity || !this.benefId) return;
     this.savingBenef = true;
+
+    if (this.benefType === 'orphan') {
+      this.guardianService.getOrphans(+this.benefId).subscribe({
+        next: (orphans: any[]) => {
+          const active = orphans.filter(o => o.is_active);
+          if (active.length === 0) { this.savingBenef = false; return; }
+          const calls = active.map(o => {
+            const d: Partial<ActivityBeneficiary> = {
+              beneficiary_type: 'orphan',
+              beneficiary_id: o.id,
+              value_received: this.activity!.payment_type === 'financial' ? (this.benefAmount ?? undefined) : undefined,
+              payment_method: this.activity!.payment_type === 'financial' ? (this.benefPaymentMethod as string) : undefined,
+            };
+            return this.service.addBeneficiary(this.activity!.id, d);
+          });
+          let done = 0;
+          let failed = false;
+          calls.forEach(call => call.subscribe({
+            next: () => {
+              done++;
+              if (done === calls.length && !failed) {
+                this.savingBenef = false; this.showBenefForm = false;
+                this.benefId = null; this.benefAmount = null;
+                this.benefPaymentMethod = null; this.benefScreenshotFile = null; this.benefScreenshotPreview = null;
+                this.loadActivity(this.activity!.id);
+                this.refreshBanks();
+              }
+            },
+            error: (err: any) => {
+              if (!failed) {
+                failed = true;
+                this.savingBenef = false;
+                if (err?.status === 422 && err?.error?.error === 'insufficient_balance') {
+                  this.balanceError = err.error.data;
+                  this.showBalanceModal = true;
+                }
+              }
+            }
+          }));
+        },
+        error: () => { this.savingBenef = false; }
+      });
+      return;
+    }
+
     const data: Partial<ActivityBeneficiary> = {
       beneficiary_type: this.benefType as any,
       beneficiary_id: +this.benefId,
