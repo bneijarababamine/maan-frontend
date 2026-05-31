@@ -221,6 +221,7 @@ interface FilterChip {
                     <td class="td-acts">
                       <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm">👁️</button>
                       <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm">✏️</button>
+                      <button (click)="confirmDelete(o)" class="btn-icon-sm btn-del" title="{{ 'COMMON.DELETE' | translate }}">🗑️</button>
                     </td>
                   </tr>
                 </tbody>
@@ -493,12 +494,16 @@ export class OrphansListComponent implements OnInit {
     this.dropUp = rect.bottom > window.innerHeight - 180;
   }
   goDetail(id: number): void { this.router.navigate(['/orphans', id]); }
-  confirmDelete(o: Orphan): void { this.selectedId = o.id; this.showDelete = true; this.openMenu = null; }
+  confirmDelete(o: Orphan | any): void { this.selectedId = o.id; this.showDelete = true; this.openMenu = null; }
   deleteConfirmed(): void {
     if (!this.selectedId) return;
     this.svc.delete(this.selectedId).subscribe({
-      next: () => { this.showDelete = false; this.loadOrphans(); },
-      error: ()  => { this.showDelete = false; }
+      next: () => {
+        this.showDelete = false;
+        if (this.activeTab === 'guardians') this.loadGuardians();
+        else this.loadOrphans();
+      },
+      error: () => { this.showDelete = false; }
     });
   }
 
