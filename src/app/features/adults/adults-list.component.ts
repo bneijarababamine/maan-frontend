@@ -1,16 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrphanService } from '../../core/services/orphan.service';
 import { Orphan } from '../../core/models/orphan.model';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-adults-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, ConfirmDialogComponent],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule],
   template: `
     <div class="page-header">
       <div style="display:flex;align-items:center;gap:10px">
@@ -38,8 +37,8 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
           <th>{{ 'ORPHANS.FULL_NAME'   | translate }}</th>
           <th>{{ 'ORPHANS.GENDER'      | translate }}</th>
           <th>{{ 'ORPHANS.FATHER_NAME' | translate }}</th>
+          <th>{{ 'ORPHANS.GUARDIAN'    | translate }}</th>
           <th>{{ 'ORPHANS.AGE'         | translate }}</th>
-          <th>{{ 'ADULTS.DEACTIVATED_AT' | translate }}</th>
           <th></th>
         </tr></thead>
         <tbody>
@@ -54,13 +53,12 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
             </td>
             <td><span class="badge" [class]="o.gender==='male'?'blue':'purple'">{{ (o.gender==='male'?'ORPHANS.MALE':'ORPHANS.FEMALE')|translate }}</span></td>
             <td>{{ o.guardian?.father_name || '—' }}</td>
+            <td>{{ o.guardian?.name || '—' }}</td>
             <td>{{ o.age }} {{ 'COMMON.YEARS' | translate }}</td>
-            <td>{{ o.deactivated_at ? (o.deactivated_at | date:'dd/MM/yyyy') : '—' }}</td>
             <td (click)="$event.stopPropagation()">
               <div style="display:flex;gap:4px">
-                <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm">👁️</button>
-                <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm">✏️</button>
-                <button (click)="askReactivate(o)" class="btn-icon-sm btn-react" title="{{ 'ADULTS.REACTIVATE' | translate }}">↩️</button>
+                <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm" title="Voir">👁️</button>
+                <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm" title="Modifier">✏️</button>
               </div>
             </td>
           </tr>
@@ -70,13 +68,6 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
         </tbody>
       </table>
     </div>
-
-    <app-confirm-dialog [visible]="showReactivate" type="success"
-      [title]="'ADULTS.REACTIVATE' | translate"
-      [message]="'ADULTS.REACTIVATE_MSG' | translate"
-      [confirmLabel]="'ADULTS.REACTIVATE' | translate" iconName="undo"
-      (confirmed)="confirmReactivate()" (cancelled)="showReactivate=false">
-    </app-confirm-dialog>
   `,
   styles: [`
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
@@ -113,7 +104,6 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
     @keyframes spin { to { transform: rotate(360deg); } }
     .btn-icon-sm { width: 28px; height: 28px; border: 1px solid #eee; background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
     .btn-icon-sm:hover { background: #f5f5f5; }
-    .btn-react:hover { background: #E8F5E9; }
   `]
 })
 export class AdultsListComponent implements OnInit {
@@ -123,12 +113,9 @@ export class AdultsListComponent implements OnInit {
   search = '';
   genderFilter = '';
 
-  showReactivate = false;
-  reactivateTarget: Orphan | null = null;
-
   constructor(
     private svc: OrphanService,
-    private router: import('@angular/router').Router,
+    private router: Router,
     private translate: TranslateService
   ) {}
 
@@ -136,7 +123,7 @@ export class AdultsListComponent implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.svc.getAll({ status: 'aged_out' }).subscribe({
+    this.svc.getAll({ status: 'exceeded_limit' }).subscribe({
       next: r => { this.adults = r.data; this.applyFilter(); this.loading = false; },
       error: () => { this.loading = false; }
     });
@@ -150,7 +137,8 @@ export class AdultsListComponent implements OnInit {
       result = result.filter(o =>
         o.full_name.toLowerCase().includes(q) ||
         (o.display_name || '').toLowerCase().includes(q) ||
-        (o.guardian?.father_name || '').toLowerCase().includes(q)
+        (o.guardian?.father_name || '').toLowerCase().includes(q) ||
+        (o.guardian?.name || '').toLowerCase().includes(q)
       );
     }
     this.filtered = result;
@@ -158,13 +146,4 @@ export class AdultsListComponent implements OnInit {
 
   setGender(g: string): void { this.genderFilter = g; this.applyFilter(); }
   goDetail(id: number): void { this.router.navigate(['/orphans', id]); }
-
-  askReactivate(o: Orphan): void { this.reactivateTarget = o; this.showReactivate = true; }
-  confirmReactivate(): void {
-    if (!this.reactivateTarget) return;
-    this.svc.reactivate(this.reactivateTarget.id).subscribe({
-      next: () => { this.showReactivate = false; this.reactivateTarget = null; this.load(); },
-      error: () => { this.showReactivate = false; }
-    });
-  }
 }
