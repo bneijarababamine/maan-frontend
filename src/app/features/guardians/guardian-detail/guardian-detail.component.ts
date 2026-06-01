@@ -32,7 +32,7 @@ import { Orphan } from '../../../core/models/orphan.model';
             </span>
           </div>
           <div class="card-actions">
-            <button [routerLink]="['/guardians', guardian.id, 'edit']" class="btn btn-edit">✏️ {{ 'COMMON.EDIT' | translate }}</button>
+            <button [routerLink]="['/guardians', guardian.id, 'edit']" [queryParams]="{returnUrl: '/guardians/' + guardian.id}" class="btn btn-edit">✏️ {{ 'COMMON.EDIT' | translate }}</button>
             <button (click)="askDelete()" class="btn btn-danger">🗑️ {{ 'COMMON.DELETE' | translate }}</button>
           </div>
         </div>

@@ -13,7 +13,7 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, SearchableSelectComponent],
   template: `
-    <app-page-header [title]="(isEdit ? 'GUARDIANS.EDIT' : 'GUARDIANS.ADD') | translate" backLink="/guardians"></app-page-header>
+    <app-page-header [title]="(isEdit ? 'GUARDIANS.EDIT' : 'GUARDIANS.ADD') | translate" [backLink]="returnUrl"></app-page-header>
 
     <div class="form-card">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -73,7 +73,7 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
             <span *ngIf="saving" class="spinner-sm"></span>
             {{ (saving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
           </button>
-          <button type="button" class="btn btn-secondary" routerLink="/guardians">{{ 'COMMON.CANCEL' | translate }}</button>
+          <button type="button" class="btn btn-secondary" [routerLink]="[returnUrl]">{{ 'COMMON.CANCEL' | translate }}</button>
         </div>
       </form>
     </div>
@@ -129,6 +129,7 @@ export class GuardianFormComponent implements OnInit {
   phoneError = '';
   wilayaOptions: SelectOption[] = [];
   selectedAddress: string | null = null;
+  returnUrl = '/orphans';
 
   constructor(
     private fb: FormBuilder,
@@ -155,6 +156,8 @@ export class GuardianFormComponent implements OnInit {
       },
     });
 
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/orphans';
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEdit = true;
@@ -164,7 +167,7 @@ export class GuardianFormComponent implements OnInit {
           this.form.patchValue(res.data);
           this.selectedAddress = res.data.address || null;
         },
-        error: () => this.router.navigate(['/guardians']),
+        error: () => this.router.navigate([this.returnUrl]),
       });
     }
   }
@@ -188,7 +191,7 @@ export class GuardianFormComponent implements OnInit {
       : this.guardianService.create(this.form.value);
 
     req.subscribe({
-      next: () => { this.saving = false; this.router.navigate(['/guardians']); },
+      next: () => { this.saving = false; this.router.navigate([this.returnUrl]); },
       error: (err: any) => {
         this.saving = false;
         if (err?.error?.errors?.phone) {

@@ -168,7 +168,7 @@ interface FilterChip {
                       class="btn-add-child" (click)="$event.stopPropagation()">
                 {{ 'ORPHANS.ADD_CHILD' | translate }}
               </button>
-              <button [routerLink]="['/guardians', g.id, 'edit']"
+              <button [routerLink]="['/guardians', g.id, 'edit']" [queryParams]="{returnUrl: '/orphans'}"
                       class="btn-icon-sm" (click)="$event.stopPropagation()" title="Modifier">✏️</button>
               <button (click)="$event.stopPropagation(); askDeleteGuardian(g)"
                       class="btn-icon-sm btn-del" title="Supprimer">🗑️</button>
