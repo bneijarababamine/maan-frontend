@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrphanService } from '../../../core/services/orphan.service';
 import { GuardianService } from '../../../core/services/guardian.service';
 import { Orphan } from '../../../core/models/orphan.model';
@@ -84,8 +84,31 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         </div>
       </div>
 
-      <!-- Right: Siblings (même tuteur) -->
+      <!-- Right: Siblings + Benefits -->
       <div class="right-col">
+
+        <!-- Benefits (what we gave) -->
+        <div class="card">
+          <h3 class="card-title">⬇ {{ 'SEARCH.RECEIVED_FROM_US' | translate }} ({{ benefits.length }})</h3>
+          <div *ngIf="benefitsLoading" class="loading-state"><div class="spinner-sm"></div></div>
+          <div *ngIf="!benefitsLoading && benefits.length === 0" class="empty-state">
+            {{ 'COMMON.NO_DATA' | translate }}
+          </div>
+          <a *ngFor="let b of benefits"
+             [routerLink]="['/activities', b.activity_id]"
+             class="benefit-row">
+            <span class="benefit-dot" [style.background]="activityColor(b.activity_type)"></span>
+            <div class="benefit-info">
+              <strong>{{ isAr ? (b.activity_title_ar || b.activity_title_fr) : (b.activity_title_fr || b.activity_title_ar) }}</strong>
+              <span class="benefit-date">{{ b.activity_date | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <span *ngIf="b.payment_type === 'financial' && b.value_received" class="benefit-amount">
+              {{ b.value_received | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}
+            </span>
+          </a>
+        </div>
+
+        <!-- Siblings -->
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">{{ 'ORPHANS.SIBLINGS' | translate }} ({{ siblings.length }})</h3>
@@ -174,18 +197,42 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     .empty-state { text-align: center; color: #aaa; padding: 20px 0; font-size: 14px; }
     .loading-state { display: flex; justify-content: center; padding: 60px; }
     .spinner-lg { width: 40px; height: 40px; border: 4px solid #eee; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .spinner-sm { width: 24px; height: 24px; border: 3px solid #eee; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 12px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .benefit-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid #f5f5f5;
+      text-decoration: none; color: inherit; transition: background 0.12s;
+      border-radius: 6px; padding-inline: 4px;
+    }
+    .benefit-row:last-child { border-bottom: none; }
+    .benefit-row:hover { background: #f0f4ff; }
+    .benefit-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .benefit-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .benefit-info strong { font-size: 13px; color: #222; }
+    .benefit-date { font-size: 11px; color: #999; }
+    .benefit-amount { font-weight: 700; font-size: 13px; color: #1565C0; white-space: nowrap; }
   `]
 })
 export class OrphanDetailComponent implements OnInit {
   orphan: Orphan | null = null;
   siblings: any[] = [];
+  benefits: any[] = [];
   loading = true;
+  benefitsLoading = false;
+
+  private activityColors: Record<string, string> = {
+    school_fees: '#1565C0', eid_help: '#F57F17', food_basket: '#2E7D32',
+    winter_clothes: '#6A1B9A', ramadan: '#E64A19', other: '#757575',
+  };
+
+  get isAr(): boolean { return this.translate.currentLang === 'ar'; }
 
   constructor(
     private route: ActivatedRoute,
     private service: OrphanService,
     private guardianService: GuardianService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -197,6 +244,7 @@ export class OrphanDetailComponent implements OnInit {
         if (this.orphan?.guardian?.id) {
           this.loadSiblings(this.orphan.guardian.id, id);
         }
+        this.loadBenefits(id);
       },
       error: () => { this.loading = false; }
     });
@@ -208,4 +256,14 @@ export class OrphanDetailComponent implements OnInit {
       error: () => {}
     });
   }
+
+  private loadBenefits(id: number): void {
+    this.benefitsLoading = true;
+    this.service.getBenefits(id).subscribe({
+      next: (res: any) => { this.benefits = res.data ?? []; this.benefitsLoading = false; },
+      error: () => { this.benefitsLoading = false; }
+    });
+  }
+
+  activityColor(type: string): string { return this.activityColors[type] ?? '#757575'; }
 }
