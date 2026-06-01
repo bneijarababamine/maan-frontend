@@ -228,7 +228,8 @@
     "CONFIRM_ADULT":  "Confirmer",
     "REACTIVATE":     "Réactiver comme orphelin",
     "REACTIVATE_MSG": "Voulez-vous réactiver cet adulte comme orphelin ?",
-    "DEACTIVATED_AT": "Date de passage"
+    "DEACTIVATED_AT": "Date de passage",
+    "ADULTS_COUNT":   "adulte(s)"
   },
   "FAMILIES": {
     "TITLE":          "Familles",

@@ -228,7 +228,8 @@
     "CONFIRM_ADULT":  "تأكيد",
     "REACTIVATE":     "إعادة كيتيم",
     "REACTIVATE_MSG": "هل تريد إعادة هذا البالغ إلى قائمة الأيتام؟",
-    "DEACTIVATED_AT": "تاريخ الانتقال"
+    "DEACTIVATED_AT": "تاريخ الانتقال",
+    "ADULTS_COUNT":   "بالغ"
   },
   "FAMILIES": {
     "TITLE":          "الأسر",
