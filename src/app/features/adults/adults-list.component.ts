@@ -355,34 +355,40 @@ export class AdultsListComponent implements OnInit {
     const p: any = {};
     if (this.guardianSearch) p.search = this.guardianSearch;
     this.guardianSvc.getAll(p).subscribe({
-      next: res => { this.guardians = res.data; this.guardianLoading = false; },
-      error: ()  => { this.guardianLoading = false; }
+      next: res => {
+        const allGuardians = res.data.filter(g => (g.orphans_count ?? 0) > 0);
+        if (allGuardians.length === 0) {
+          this.guardians = [];
+          this.guardianLoading = false;
+          return;
+        }
+        const requests = allGuardians.map(g =>
+          this.guardianSvc.getOrphans(g.id).pipe(map(orphans => ({ id: g.id, orphans })))
+        );
+        forkJoin(requests).subscribe({
+          next: results => {
+            results.forEach(r => {
+              const g = allGuardians.find(x => x.id === r.id);
+              if (g) g.orphans = r.orphans;
+            });
+            this.guardians = allGuardians.filter(g => this.adultChildrenCount(g) > 0);
+            this.guardianLoading = false;
+          },
+          error: () => { this.guardianLoading = false; }
+        });
+      },
+      error: () => { this.guardianLoading = false; }
     });
   }
 
   toggleGuardian(id: number): void {
     if (this.expandedGuardianId === id) { this.expandedGuardianId = null; return; }
     this.expandedGuardianId = id;
-    const g = this.guardians.find(x => x.id === id);
-    if (g && !g.orphans) {
-      this.guardianSvc.getOrphans(id).subscribe({ next: orphans => g.orphans = orphans });
-    }
   }
 
   exportGuardianPdf(): void {
     this.pdfGuardianLoading = true;
-    const toLoad = this.guardians.filter(g => (g.orphans_count ?? 0) > 0 && !g.orphans);
-    if (toLoad.length === 0) { this.generateGuardianPdf(); return; }
-    const requests = toLoad.map(g =>
-      this.guardianSvc.getOrphans(g.id).pipe(map(orphans => ({ id: g.id, orphans })))
-    );
-    forkJoin(requests).subscribe({
-      next: results => {
-        results.forEach(r => { const g = this.guardians.find(x => x.id === r.id); if (g) g.orphans = r.orphans; });
-        this.generateGuardianPdf();
-      },
-      error: () => { this.pdfGuardianLoading = false; }
-    });
+    this.generateGuardianPdf();
   }
 
   private generateGuardianPdf(): void {
