@@ -129,6 +129,7 @@ export class SidebarComponent {
     { icon: 'volunteer_activism', labelKey: 'MENU.DONORS',        route: '/donors'        },
     { icon: 'redeem',             labelKey: 'MENU.DONATIONS',     route: '/donations'     },
     { icon: 'child_care',         labelKey: 'MENU.ORPHANS',       route: '/orphans'       },
+    { icon: 'school',             labelKey: 'MENU.ADULTS',        route: '/adults'        },
     { icon: 'family_restroom',    labelKey: 'MENU.FAMILIES',      route: '/families'      },
     { icon: 'event',              labelKey: 'MENU.ACTIVITIES',    route: '/activities'    },
     { icon: 'settings',           labelKey: 'MENU.SETTINGS',      route: '/settings'      },

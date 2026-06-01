@@ -84,6 +84,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orphans/orphans-list/orphans-list.component').then(m => m.OrphansListComponent)
       },
       {
+        path: 'adults',
+        loadComponent: () => import('./features/adults/adults-list.component').then(m => m.AdultsListComponent)
+      },
+      {
         path: 'orphans/new',
         loadComponent: () => import('./features/orphans/orphan-form/orphan-form.component').then(m => m.OrphanFormComponent)
       },

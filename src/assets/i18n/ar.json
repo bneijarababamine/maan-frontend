@@ -6,6 +6,7 @@
     "DONORS":        "المتبرعون",
     "DONATIONS":     "التبرعات",
     "ORPHANS":       "الأيتام",
+    "ADULTS":        "البالغون",
     "GUARDIANS":     "الأولياء",
     "FAMILIES":      "الأسر المحتاجة",
     "ACTIVITIES":    "الأنشطة",
@@ -218,6 +219,16 @@
     "DELETE_GUARDIAN_MSG":   "حذف هذا الولي؟",
     "CHILDREN_COUNT":     "طفل",
     "EXPORT_BY_GUARDIAN": "حسب الولي (مجمّع)"
+  },
+  "ADULTS": {
+    "TITLE":          "البالغون",
+    "NO_DATA":        "لا يوجد بالغون",
+    "MARK_ADULT":     "تصنيف كبالغ",
+    "MARK_ADULT_MSG": "هل تريد تصنيف هذا اليتيم كبالغ",
+    "CONFIRM_ADULT":  "تأكيد",
+    "REACTIVATE":     "إعادة كيتيم",
+    "REACTIVATE_MSG": "هل تريد إعادة هذا البالغ إلى قائمة الأيتام؟",
+    "DEACTIVATED_AT": "تاريخ الانتقال"
   },
   "FAMILIES": {
     "TITLE":          "الأسر",

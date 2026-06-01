@@ -6,6 +6,7 @@
     "DONORS":        "Donateurs",
     "DONATIONS":     "Dons",
     "ORPHANS":       "Orphelins",
+    "ADULTS":        "Adultes",
     "GUARDIANS":     "Tuteurs",
     "FAMILIES":      "Familles",
     "ACTIVITIES":    "Activités",
@@ -218,6 +219,16 @@
     "DELETE_GUARDIAN_MSG":   "Supprimer ce tuteur ?",
     "CHILDREN_COUNT":     "enfant(s)",
     "EXPORT_BY_GUARDIAN": "Par tuteur (groupé)"
+  },
+  "ADULTS": {
+    "TITLE":          "Adultes",
+    "NO_DATA":        "Aucun adulte trouvé",
+    "MARK_ADULT":     "Marquer comme adulte",
+    "MARK_ADULT_MSG": "Voulez-vous marquer comme adulte",
+    "CONFIRM_ADULT":  "Confirmer",
+    "REACTIVATE":     "Réactiver comme orphelin",
+    "REACTIVATE_MSG": "Voulez-vous réactiver cet adulte comme orphelin ?",
+    "DEACTIVATED_AT": "Date de passage"
   },
   "FAMILIES": {
     "TITLE":          "Familles",

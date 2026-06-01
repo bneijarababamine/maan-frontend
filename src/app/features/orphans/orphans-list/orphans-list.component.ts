@@ -221,6 +221,7 @@ interface FilterChip {
                     <td class="td-acts">
                       <button [routerLink]="['/orphans', o.id]" class="btn-icon-sm">👁️</button>
                       <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon-sm">✏️</button>
+                      <button *ngIf="o.is_active" (click)="askMarkAdult(o)" class="btn-icon-sm btn-adult" title="{{ 'ADULTS.MARK_ADULT' | translate }}">🎓</button>
                       <button (click)="confirmDelete(o)" class="btn-icon-sm btn-del" title="{{ 'COMMON.DELETE' | translate }}">🗑️</button>
                     </td>
                   </tr>
@@ -244,6 +245,19 @@ interface FilterChip {
       [confirmLabel]="'COMMON.DELETE' | translate" iconName="delete"
       (confirmed)="deleteConfirmed()" (cancelled)="showDelete=false">
     </app-confirm-dialog>
+
+    <!-- Modal marquer comme adulte -->
+    <div class="modal-overlay" *ngIf="showMarkAdult" (click)="showMarkAdult=false">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-icon">🎓</div>
+        <h3>{{ 'ADULTS.MARK_ADULT' | translate }}</h3>
+        <p>{{ 'ADULTS.MARK_ADULT_MSG' | translate }} <strong>{{ markAdultTarget?.display_name || markAdultTarget?.full_name }}</strong> ?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" (click)="showMarkAdult=false">{{ 'COMMON.CANCEL' | translate }}</button>
+          <button class="btn-adult-confirm" (click)="confirmMarkAdult()">{{ 'ADULTS.CONFIRM_ADULT' | translate }}</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal suppression tuteur -->
     <div class="modal-overlay" *ngIf="showDeleteGuardian" (click)="showDeleteGuardian=false">
@@ -341,6 +355,9 @@ interface FilterChip {
     .btn-icon-sm { width: 28px; height: 28px; border: 1px solid #eee; background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
     .btn-icon-sm:hover { background: #f5f5f5; }
     .btn-icon-sm.btn-del:hover { background: #FFEBEE; }
+    .btn-icon-sm.btn-adult:hover { background: #E8F5E9; }
+    .btn-adult-confirm { background: #2E7D32; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; }
+    .btn-adult-confirm:hover { background: #1B5E20; }
     .expand-arrow { color: #bbb; font-size: 11px; width: 14px; text-align: center; }
 
     .children-list { border-top: 1px solid #f0f0f0; background: #FAFAFA; padding: 14px 18px; }
@@ -408,6 +425,9 @@ export class OrphansListComponent implements OnInit {
   showDeleteGuardian = false;
   deleteGuardianTarget: Guardian | null = null;
   pdfGuardianLoading = false;
+
+  showMarkAdult = false;
+  markAdultTarget: any = null;
   private guardianDebounce: any;
 
   ageLimitMale   = 18;
@@ -645,6 +665,15 @@ export class OrphansListComponent implements OnInit {
         this.pdfGuardianLoading = false;
       }).catch(() => { this.pdfGuardianLoading = false; });
     }).catch(() => { this.pdfGuardianLoading = false; });
+  }
+
+  askMarkAdult(o: any): void { this.markAdultTarget = o; this.showMarkAdult = true; }
+  confirmMarkAdult(): void {
+    if (!this.markAdultTarget) return;
+    this.svc.deactivate(this.markAdultTarget.id, 'aged_out').subscribe({
+      next: () => { this.showMarkAdult = false; this.markAdultTarget = null; this.loadGuardians(); },
+      error: () => { this.showMarkAdult = false; }
+    });
   }
 
   askDeleteGuardian(g: Guardian): void { this.deleteGuardianTarget = g; this.showDeleteGuardian = true; }

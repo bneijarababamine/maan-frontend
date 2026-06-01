@@ -46,6 +46,14 @@ export class OrphanService {
     return this.http.delete<void>(`${this.api}/${id}`);
   }
 
+  deactivate(id: number, reason: 'manual' | 'other' | 'aged_out', notes?: string): Observable<any> {
+    return this.http.post(`${this.api}/${id}/deactivate`, { reason, notes });
+  }
+
+  reactivate(id: number): Observable<any> {
+    return this.http.post(`${this.api}/${id}/reactivate`, {});
+  }
+
   addSibling(orphanId: number, siblingId: number): Observable<any> {
     return this.http.post(`${this.api}/${orphanId}/siblings`, { sibling_id: siblingId });
   }
