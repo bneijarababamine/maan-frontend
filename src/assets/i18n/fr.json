@@ -10,8 +10,17 @@
     "GUARDIANS":     "Tuteurs",
     "FAMILIES":      "Familles",
     "ACTIVITIES":    "Activités",
+    "SEARCH":        "Recherche globale",
     "SETTINGS":      "Paramètres",
     "GESTION":       "Gestion"
+  },
+  "SEARCH": {
+    "TITLE":           "Recherche globale",
+    "PLACEHOLDER":     "Rechercher par nom ou numéro de téléphone...",
+    "NO_RESULTS":      "Aucun résultat trouvé",
+    "RECEIVED_FROM_US":"Ce qu'on lui a donné",
+    "GIVEN_TO_US":     "Ce qu'il nous a donné",
+    "DONATIONS_GIVEN": "Dons effectués"
   },
   "SETTINGS": {
     "TITLE":               "Paramètres",

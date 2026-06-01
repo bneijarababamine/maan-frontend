@@ -710,9 +710,7 @@ export class ActivityDetailComponent implements OnInit {
         const orphanRows = grp.orphans.map((o: any, i: number) => `
           <tr style="background:${i % 2 === 0 ? '#fff' : '#f5faf5'}">
             <td style="padding:4px 10px 4px 22px;color:#555">${o.beneficiary_name || '—'}</td>
-            ${a.payment_type === 'financial'
-              ? `<td style="padding:4px 10px;text-align:center;color:#2E7D32;font-weight:600">${o.value_received ? o.value_received.toLocaleString('fr-FR') + ' ' + t('MRU', 'أوقية') : '—'}</td>`
-              : ''}
+            ${a.payment_type === 'financial' ? `<td style="padding:4px 10px"></td>` : ''}
           </tr>`).join('');
         return `
           <tr style="background:#E8F5E9">

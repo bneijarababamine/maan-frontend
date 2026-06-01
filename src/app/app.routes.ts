@@ -152,6 +152,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/activities/activity-form/activity-form.component').then(m => m.ActivityFormComponent)
       },
       {
+        path: 'search',
+        loadComponent: () => import('./features/search/search.component').then(m => m.SearchComponent)
+      },
+      {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
       },

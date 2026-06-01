@@ -10,8 +10,17 @@
     "GUARDIANS":     "الأولياء",
     "FAMILIES":      "الأسر المحتاجة",
     "ACTIVITIES":    "الأنشطة",
+    "SEARCH":        "بحث شامل",
     "SETTINGS":      "الإعدادات",
     "GESTION":       "الإدارة المالية"
+  },
+  "SEARCH": {
+    "TITLE":           "بحث شامل",
+    "PLACEHOLDER":     "ابحث بالاسم أو رقم الهاتف...",
+    "NO_RESULTS":      "لا توجد نتائج",
+    "RECEIVED_FROM_US":"ما قدمناه له",
+    "GIVEN_TO_US":     "ما قدمه لنا",
+    "DONATIONS_GIVEN": "التبرعات المقدمة"
   },
   "SETTINGS": {
     "TITLE":               "الإعدادات",
