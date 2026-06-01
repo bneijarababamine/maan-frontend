@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-guardians-list',
@@ -292,105 +292,100 @@ export class GuardiansListComponent implements OnInit {
   }
 
   private generatePdf(): void {
-    const t = (key: string, params?: any) => this.translate.instant(key, params);
-    const doc   = new jsPDF();
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
+    const t    = (key: string) => this.translate.instant(key);
+    const lang = this.translate.currentLang || 'fr';
+    const isAr = lang === 'ar';
+    const dir  = isAr ? 'rtl' : 'ltr';
+    const thAlign = isAr ? 'right' : 'left';
 
-    const male   = t('ORPHANS.MALE');
-    const female = t('ORPHANS.FEMALE');
-    const active = t('ORPHANS.STATUS_ACTIVE');
-    const inactive = t('ORPHANS.STATUS_INACTIVE');
-
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(46, 125, 50);
-    doc.text(t('ORPHANS.EXPORT_BY_GUARDIAN'), 14, 18);
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(150);
-    doc.text(new Date().toLocaleDateString('fr-FR'), pageW - 14, 18, { align: 'right' });
-
-    let y = 28;
     let totalOrphans = 0;
+    let guardiansHtml = '';
 
     for (const guardian of this.guardians) {
       const orphans = (guardian.orphans ?? []).filter((o: any) => true);
       if (orphans.length === 0) continue;
       totalOrphans += orphans.length;
 
-      if (y > pageH - 50) { doc.addPage(); y = 20; }
+      const rowsHtml = orphans.map((o: any, i: number) => {
+        const gColor = o.gender === 'male' ? '#1565C0' : '#AD1457';
+        const gLabel = o.gender === 'male' ? t('ORPHANS.MALE') : t('ORPHANS.FEMALE');
+        const sColor = o.is_active ? '#2E7D32' : '#C62828';
+        const sLabel = o.is_active ? t('ORPHANS.STATUS_ACTIVE') : t('ORPHANS.STATUS_INACTIVE');
+        return `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FCF8'}">
+          <td style="padding:5px 8px;text-align:center;color:#bbb;font-size:11px">${i + 1}</td>
+          <td style="padding:5px 8px;font-weight:600;color:#1a1a2e">${o.display_name || o.full_name || '—'}</td>
+          <td style="padding:5px 8px;text-align:center;color:${gColor};font-weight:700">${gLabel}</td>
+          <td style="padding:5px 8px;text-align:center;color:#555">${o.birth_year || '—'}</td>
+          <td style="padding:5px 8px;text-align:center;color:#555">${o.age != null ? o.age + ' ' + t('COMMON.YEARS') : '—'}</td>
+          <td style="padding:5px 8px;color:#555">${o.school_name || '—'}</td>
+          <td style="padding:5px 8px;text-align:center;color:${sColor};font-weight:600">${sLabel}</td>
+        </tr>`;
+      }).join('');
 
-      doc.setFillColor(232, 245, 233);
-      doc.roundedRect(14, y, pageW - 28, 20, 3, 3, 'F');
-
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(27, 94, 32);
-      doc.text(guardian.name, 19, y + 8);
-
-      if (guardian.father_name) {
-        doc.setFontSize(8.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(90);
-        doc.text(`${t('ORPHANS.FATHER_NAME')} : ${guardian.father_name}`, 19, y + 15);
-      }
-
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(90);
-      doc.text(`${t('COMMON.PHONE')} : ${guardian.phone}`, pageW - 18, y + 8, { align: 'right' });
-      doc.text(`${orphans.length} ${t('GUARDIANS.ORPHANS_COUNT')}`, pageW - 18, y + 15, { align: 'right' });
-
-      y += 23;
-
-      autoTable(doc, {
-        startY: y,
-        head: [['#', t('ORPHANS.FULL_NAME'), t('ORPHANS.GENDER'), t('ORPHANS.BIRTH_YEAR'), t('ORPHANS.AGE'), t('ORPHANS.SCHOOL'), t('COMMON.STATUS')]],
-        body: orphans.map((o: any, i: number) => [
-          i + 1,
-          o.display_name || o.full_name || '—',
-          o.gender === 'male' ? male : female,
-          o.birth_year || '—',
-          o.age != null ? `${o.age} ${t('COMMON.YEARS')}` : '—',
-          o.school_name || '—',
-          o.is_active ? active : inactive,
-        ]),
-        styles: { fontSize: 8, cellPadding: 2.5 },
-        headStyles: { fillColor: [46, 125, 50], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-        columnStyles: {
-          0: { cellWidth: 8,  halign: 'center' },
-          2: { cellWidth: 18, halign: 'center' },
-          3: { cellWidth: 16, halign: 'center' },
-          4: { cellWidth: 16, halign: 'center' },
-          6: { cellWidth: 16, halign: 'center' },
-        },
-        alternateRowStyles: { fillColor: [248, 252, 248] },
-        margin: { left: 14, right: 14 },
-        didParseCell: (data) => {
-          if (data.section !== 'body') return;
-          const val = data.cell.raw as string;
-          if (data.column.index === 2) {
-            data.cell.styles.textColor = val === male ? [21, 101, 192] : [173, 20, 87];
-            data.cell.styles.fontStyle = 'bold';
-          }
-          if (data.column.index === 6) {
-            data.cell.styles.textColor = val === active ? [46, 125, 50] : [198, 40, 40];
-          }
-        },
-      });
-
-      y = (doc as any).lastAutoTable.finalY + 12;
+      guardiansHtml += `
+        <div style="margin-bottom:18px">
+          <div style="background:#E8F5E9;border-radius:6px;padding:10px 14px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong style="color:#1B5E20;font-size:14px">${guardian.name}</strong>
+              <span style="color:#666;font-size:12px">📞 ${guardian.phone}</span>
+            </div>
+            ${guardian.father_name ? `<div style="color:#666;font-size:12px;margin-top:3px">${t('ORPHANS.FATHER_NAME')} : ${guardian.father_name}</div>` : ''}
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:center;width:28px">#</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:${thAlign}">${t('ORPHANS.FULL_NAME')}</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:center;width:65px">${t('ORPHANS.GENDER')}</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:center;width:70px">${t('ORPHANS.BIRTH_YEAR')}</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:center;width:50px">${t('ORPHANS.AGE')}</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:${thAlign}">${t('ORPHANS.SCHOOL')}</th>
+              <th style="background:#2E7D32;color:#fff;padding:6px 8px;text-align:center;width:65px">${t('COMMON.STATUS')}</th>
+            </tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>`;
     }
 
-    if (y > pageH - 20) { doc.addPage(); y = 20; }
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(46, 125, 50);
-    doc.text(`${t('COMMON.TOTAL')} : ${totalOrphans} ${t('ORPHANS.TITLE').toLowerCase()}  |  ${this.guardians.filter(g => (g.orphans_count ?? 0) > 0).length} ${t('MENU.GUARDIANS').toLowerCase()}`, 14, y);
+    const container = document.createElement('div');
+    container.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:794px;background:#fff;padding:28px 32px;font-family:'Cairo',Arial,sans-serif;font-size:12px;color:#212121;direction:${dir}`;
+    container.innerHTML = `
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h1 style="color:#2E7D32;font-size:18px;margin:0;font-weight:700">${t('ORPHANS.EXPORT_BY_GUARDIAN')}</h1>
+        <span style="color:#999;font-size:11px">${new Date().toLocaleDateString('fr-FR')}</span>
+      </div>
+      ${guardiansHtml || `<p style="color:#aaa;text-align:center">${t('ORPHANS.NO_DATA')}</p>`}
+      <div style="margin-top:14px;padding-top:12px;border-top:2px solid #2E7D32;color:#2E7D32;font-weight:700;font-size:14px">
+        ${t('COMMON.TOTAL')} : ${totalOrphans} ${t('ORPHANS.TITLE')}
+      </div>`;
 
-    doc.save(`orphelins-par-tuteur-${new Date().toISOString().slice(0,10)}.pdf`);
+    document.body.appendChild(container);
+    document.fonts.load('600 12px Cairo').then(() => {
+      html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        document.body.removeChild(container);
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgH  = (canvas.height / canvas.width) * pageW;
+        if (imgH <= pageH) {
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH);
+        } else {
+          let y = 0;
+          const ratio = canvas.width / pageW;
+          while (y < canvas.height) {
+            const sliceH = Math.min(pageH * ratio, canvas.height - y);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width  = canvas.width;
+            sliceCanvas.height = sliceH;
+            sliceCanvas.getContext('2d')!.drawImage(canvas, 0, -y);
+            if (y > 0) pdf.addPage();
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, sliceH / ratio);
+            y += sliceH;
+          }
+        }
+        pdf.save(`orphelins-par-tuteur-${new Date().toISOString().slice(0, 10)}.pdf`);
+      });
+    });
   }
 
   askDelete(g: Guardian): void {

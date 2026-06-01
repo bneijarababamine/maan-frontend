@@ -10,7 +10,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../../../shared/components/insufficient-balance-modal/insufficient-balance-modal.component';
 import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-donations-list',
@@ -256,57 +256,87 @@ export class DonationsListComponent implements OnInit {
   }
 
   exportPdf(): void {
-    const doc = new jsPDF();
+    const lang = this.translate.currentLang || 'fr';
+    const isAr = lang === 'ar';
+    const dir  = isAr ? 'rtl' : 'ltr';
+    const t    = (fr: string, ar: string) => isAr ? ar : fr;
 
-    const title = 'Liste des Dons';
     const subtitle = this.buildSubtitle();
-    const totalStr = `Total : ${this.total.toLocaleString('fr-FR')} MRU`;
+    const totalVal = this.total.toLocaleString('fr-FR');
 
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text(title, 14, 18);
+    const rowsHtml = this.donations.map((d, i) => `
+      <tr style="background:${i % 2 === 0 ? '#fff' : '#F5F8FF'}">
+        <td style="padding:7px 10px;font-weight:600;color:#1a1a2e">${this.donorName(d)}</td>
+        <td style="padding:7px 10px;text-align:center;color:#555">${d.donation_type?.name_fr || '—'}</td>
+        <td style="padding:7px 10px;text-align:center;color:#555">${d.year || '—'}</td>
+        <td style="padding:7px 10px;text-align:center;font-weight:600;color:#1565C0">${Number(d.amount).toLocaleString('fr-FR')} MRU</td>
+        <td style="padding:7px 10px;text-align:center;color:#555">${d.payment_method || '—'}</td>
+        <td style="padding:7px 10px;text-align:center;color:#555">${d.donated_at ? new Date(d.donated_at).toLocaleDateString('fr-FR') : '—'}</td>
+      </tr>`).join('');
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    if (subtitle) doc.text(subtitle, 14, 26);
-    doc.setTextColor(0);
+    const container = document.createElement('div');
+    container.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:794px;background:#fff;padding:28px 32px;font-family:'Cairo',Arial,sans-serif;font-size:12px;color:#212121;direction:${dir}`;
+    container.innerHTML = `
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${subtitle ? '6px' : '18px'}">
+        <h1 style="color:#1565C0;font-size:18px;margin:0;font-weight:700">${t('Liste des Dons', 'قائمة التبرعات')}</h1>
+        <span style="color:#999;font-size:11px">${new Date().toLocaleDateString('fr-FR')}</span>
+      </div>
+      ${subtitle ? `<p style="color:#888;font-size:11px;margin:0 0 16px">${subtitle}</p>` : ''}
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#1565C0;color:#fff">
+            <th style="padding:9px 10px;text-align:${isAr ? 'right' : 'left'}">${t('Donateur', 'المتبرع')}</th>
+            <th style="padding:9px 10px;text-align:center;width:80px">${t('Type', 'النوع')}</th>
+            <th style="padding:9px 10px;text-align:center;width:55px">${t('Année', 'السنة')}</th>
+            <th style="padding:9px 10px;text-align:center;width:110px">${t('Montant', 'المبلغ')}</th>
+            <th style="padding:9px 10px;text-align:center;width:80px">${t('Mode', 'الطريقة')}</th>
+            <th style="padding:9px 10px;text-align:center;width:90px">${t('Date', 'التاريخ')}</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div style="margin-top:16px;padding-top:12px;border-top:2px solid #1565C0;color:#2E7D32;font-weight:700;font-size:14px">
+        ${t('Total', 'الإجمالي')} : ${totalVal} MRU
+      </div>`;
 
-    const rows = this.donations.map(d => [
-      this.donorName(d),
-      d.donation_type?.name_fr || '—',
-      d.year ? String(d.year) : '—',
-      `${Number(d.amount).toLocaleString('fr-FR')} MRU`,
-      d.payment_method || '—',
-      d.donated_at ? new Date(d.donated_at).toLocaleDateString('fr-FR') : '—',
-    ]);
-
-    autoTable(doc, {
-      startY: subtitle ? 32 : 26,
-      head: [['Donateur', 'Type', 'Année', 'Montant', 'Mode', 'Date']],
-      body: rows,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [21, 101, 192], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 248, 255] },
+    document.body.appendChild(container);
+    document.fonts.load('600 12px Cairo').then(() => {
+      html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        document.body.removeChild(container);
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgH  = (canvas.height / canvas.width) * pageW;
+        if (imgH <= pageH) {
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH);
+        } else {
+          let y = 0;
+          const ratio = canvas.width / pageW;
+          while (y < canvas.height) {
+            const sliceH = Math.min(pageH * ratio, canvas.height - y);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width  = canvas.width;
+            sliceCanvas.height = sliceH;
+            sliceCanvas.getContext('2d')!.drawImage(canvas, 0, -y);
+            if (y > 0) pdf.addPage();
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, sliceH / ratio);
+            y += sliceH;
+          }
+        }
+        pdf.save(`dons-${new Date().toISOString().slice(0, 10)}.pdf`);
+      });
     });
-
-    const finalY = (doc as any).lastAutoTable?.finalY ?? 30;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(46, 125, 50);
-    doc.text(totalStr, 14, finalY + 10);
-
-    doc.save(`dons-${Date.now()}.pdf`);
   }
 
   private buildSubtitle(): string {
     const parts: string[] = [];
-    if (this.filterYear) parts.push(`Année ${this.filterYear}`);
+    if (this.filterYear) parts.push(`${this.translate.instant('DONATIONS.YEAR')} ${this.filterYear}`);
     if (this.filterTypeId) {
-      const t = this.donationTypes.find(x => String(x.id) === this.filterTypeId);
-      if (t) parts.push(`Type : ${t.name_fr}`);
+      const type = this.donationTypes.find(x => String(x.id) === this.filterTypeId);
+      if (type) parts.push(type.name_fr);
     }
-    if (this.filterPaymentMethod) parts.push(`Mode : ${this.filterPaymentMethod}`);
+    if (this.filterPaymentMethod) parts.push(this.filterPaymentMethod);
     return parts.join(' | ');
   }
 }
