@@ -2,10 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { SearchService, SearchResult, SearchPerson, ActivityBenefit } from '../../core/services/search.service';
+import { SearchService, SearchResult } from '../../core/services/search.service';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
@@ -55,7 +55,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
               <span *ngIf="p.phone" class="person-phone">📞 {{ p.phone }}</span>
             </div>
             <span class="badge" [class]="p.is_active ? 'success' : 'secondary'">
-              {{ (p.is_active ? 'MEMBERS.ACTIVE' : 'MEMBERS.INACTIVE') | translate }}
+              {{ (p.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
             </span>
           </div>
           <ng-container *ngTemplateOutlet="benefitsBlock; context: { $implicit: p }"></ng-container>
@@ -98,7 +98,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
               <span *ngIf="p.phone" class="person-phone">📞 {{ p.phone }}</span>
             </div>
             <span class="badge" [class]="p.is_active ? 'success' : 'secondary'">
-              {{ (p.is_active ? 'MEMBERS.ACTIVE' : 'MEMBERS.INACTIVE') | translate }}
+              {{ (p.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
             </span>
           </div>
           <!-- Contributions -->
@@ -163,7 +163,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
               <span *ngIf="p.phone" class="person-phone">📞 {{ p.phone }}</span>
             </div>
             <span class="badge" [class]="p.is_active ? 'success' : 'secondary'">
-              {{ (p.is_active ? 'MEMBERS.ACTIVE' : 'MEMBERS.INACTIVE') | translate }}
+              {{ (p.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
             </span>
           </div>
           <ng-container *ngTemplateOutlet="benefitsBlock; context: { $implicit: p }"></ng-container>
@@ -195,27 +195,27 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
       background: #fff; border-radius: 12px; padding: 10px 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 24px;
     }
-    .search-icon { font-family: 'Material Icons'; font-size: 22px; color: #aaa; }
+    .search-icon { font-family: 'Material Symbols Outlined'; font-size: 22px; color: #aaa; }
     .search-input {
       flex: 1; border: none; outline: none; font-size: 15px;
       font-family: 'Cairo', Arial, sans-serif; background: transparent;
     }
     .clear-btn {
-      font-family: 'Material Icons'; font-size: 18px; color: #aaa;
-      border: none; background: none; cursor: pointer; padding: 0;
+      font-family: 'Material Symbols Outlined'; font-size: 20px; color: #aaa;
+      border: none; background: none; cursor: pointer; padding: 0; line-height: 1;
     }
     .loading-state { display: flex; justify-content: center; padding: 40px; }
     .spinner { width: 32px; height: 32px; border: 3px solid #eee; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .empty-state { text-align: center; color: #aaa; padding: 48px 20px; }
-    .empty-icon { font-family: 'Material Icons'; font-size: 48px; display: block; margin-bottom: 12px; }
+    .empty-icon { font-family: 'Material Symbols Outlined'; font-size: 48px; display: block; margin-bottom: 12px; }
     .results-wrap { display: flex; flex-direction: column; gap: 20px; }
     .section { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
     .section-header {
       display: flex; align-items: center; gap: 8px;
       padding: 12px 16px; font-size: 14px; font-weight: 700;
     }
-    .mat-icon { font-family: 'Material Icons'; font-size: 18px; }
+    .mat-icon { font-family: 'Material Symbols Outlined'; font-size: 18px; }
     .guardian-color { background: #E8F5E9; color: #2E7D32; }
     .orphan-color   { background: #FFF3E0; color: #E64A19; }
     .member-color   { background: #E3F2FD; color: #1565C0; }
