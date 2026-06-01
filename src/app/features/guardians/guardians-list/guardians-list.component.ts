@@ -9,6 +9,7 @@ import { forkJoin, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { collectRowBreaks, renderCanvasToPdf } from '../../../shared/utils/pdf.utils';
 
 @Component({
   selector: 'app-guardians-list',
@@ -361,28 +362,11 @@ export class GuardiansListComponent implements OnInit {
 
     document.body.appendChild(container);
     document.fonts.load('600 12px Cairo').then(() => {
+      const safeBreaks = collectRowBreaks(container);
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
         const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH  = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) {
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH);
-        } else {
-          let y = 0;
-          const ratio = canvas.width / pageW;
-          while (y < canvas.height) {
-            const sliceH = Math.min(pageH * ratio, canvas.height - y);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width  = canvas.width;
-            sliceCanvas.height = sliceH;
-            sliceCanvas.getContext('2d')!.drawImage(canvas, 0, -y);
-            if (y > 0) pdf.addPage();
-            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, sliceH / ratio);
-            y += sliceH;
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaks);
         pdf.save(`orphelins-par-tuteur-${new Date().toISOString().slice(0, 10)}.pdf`);
       });
     });

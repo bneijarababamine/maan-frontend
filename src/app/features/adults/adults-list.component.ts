@@ -11,6 +11,7 @@ import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { collectRowBreaks, renderCanvasToPdf } from '../../shared/utils/pdf.utils';
 
 @Component({
   selector: 'app-adults-list',
@@ -459,27 +460,11 @@ export class AdultsListComponent implements OnInit {
 
     document.body.appendChild(container);
     document.fonts.load('600 12px Cairo').then(() => {
+      const safeBreaks = collectRowBreaks(container);
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
         const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) {
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH);
-        } else {
-          let y = 0;
-          const ratio = canvas.width / pageW;
-          while (y < canvas.height) {
-            const sliceH = Math.min(pageH * ratio, canvas.height - y);
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width; sc.height = sliceH;
-            sc.getContext('2d')!.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
-            y += sliceH;
-            if (y < canvas.height) pdf.addPage();
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaks);
         pdf.save(`adultes-par-tuteur-${new Date().toISOString().slice(0, 10)}.pdf`);
         this.pdfGuardianLoading = false;
       }).catch(() => { this.pdfGuardianLoading = false; });

@@ -19,6 +19,7 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
 import { InsufficientBalanceModalComponent, InsufficientBalanceData } from '../../../shared/components/insufficient-balance-modal/insufficient-balance-modal.component';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { collectRowBreaks, renderCanvasToPdf } from '../../../shared/utils/pdf.utils';
 
 @Component({
   selector: 'app-activity-detail',
@@ -872,30 +873,12 @@ export class ActivityDetailComponent implements OnInit {
       </div>`;
 
     document.body.appendChild(container);
+    const safeBreaks = collectRowBreaks(container);
     document.fonts.load('600 12px Cairo').then(() => {
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
-        const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) {
-          pdf.addImage(imgData, 'PNG', 0, 0, pageW, imgH);
-        } else {
-          const ratio = canvas.width / pageW;
-          const sliceH = Math.floor(pageH * ratio);
-          let yOff = 0;
-          while (yOff < canvas.height) {
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width;
-            sc.height = Math.min(sliceH, canvas.height - yOff);
-            sc.getContext('2d')!.drawImage(canvas, 0, -yOff);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
-            yOff += sliceH;
-            if (yOff < canvas.height) pdf.addPage();
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaks);
         const title = (isAr ? (a.title_ar || a.title_fr) : (a.title_fr || a.title_ar)) || String(a.id);
         const safeName = title.replace(/\s+/g, '_').replace(/[^\w؀-ۿ_-]/g, '');
         const dateStr = new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');

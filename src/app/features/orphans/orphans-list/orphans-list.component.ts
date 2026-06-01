@@ -13,6 +13,7 @@ import { map } from 'rxjs/operators';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import { collectRowBreaks, renderCanvasToPdf } from '../../../shared/utils/pdf.utils';
 
 interface FilterChip {
   key: string;
@@ -617,29 +618,12 @@ export class OrphansListComponent implements OnInit {
       </div>`;
 
     document.body.appendChild(container);
+    const safeBreaks = collectRowBreaks(container);
     document.fonts.load('600 12px Cairo').then(() => {
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
         const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) {
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH);
-        } else {
-          const ratio = canvas.width / pageW;
-          const sliceH = Math.floor(pageH * ratio);
-          let y = 0;
-          while (y < canvas.height) {
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width;
-            sc.height = Math.min(sliceH, canvas.height - y);
-            sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
-            y += sliceH;
-            if (y < canvas.height) pdf.addPage();
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaks);
         pdf.save(`orphelins-par-tuteur-${new Date().toISOString().slice(0, 10)}.pdf`);
         this.pdfGuardianLoading = false;
       }).catch(() => { this.pdfGuardianLoading = false; });
@@ -694,26 +678,12 @@ export class OrphansListComponent implements OnInit {
         }).join('')}</tbody>
       </table>`;
     document.body.appendChild(container);
+    const safeBreaksComplete = collectRowBreaks(container);
     document.fonts.load('600 12px Cairo').then(() => {
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) { pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH); }
-        else {
-          const ratio = canvas.width / pageW;
-          const sliceH = Math.floor(pageH * ratio);
-          let y = 0;
-          while (y < canvas.height) {
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width; sc.height = Math.min(sliceH, canvas.height - y);
-            sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
-            y += sliceH; if (y < canvas.height) pdf.addPage();
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaksComplete);
         pdf.save(`orphelins_${new Date().toISOString().slice(0,10)}.pdf`);
       });
     });
@@ -739,26 +709,12 @@ export class OrphansListComponent implements OnInit {
       <hr style="border:none;border-top:2px solid ${color};margin-bottom:16px">
       <table style="width:100%;border-collapse:collapse">${rows}</table>`;
     document.body.appendChild(container);
+    const safeBreaksSimple = collectRowBreaks(container);
     document.fonts.load('600 12px Cairo').then(() => {
       html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
         document.body.removeChild(container);
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height / canvas.width) * pageW;
-        if (imgH <= pageH) { pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgH); }
-        else {
-          const ratio = canvas.width / pageW;
-          const sliceH = Math.floor(pageH * ratio);
-          let y = 0;
-          while (y < canvas.height) {
-            const sc = document.createElement('canvas');
-            sc.width = canvas.width; sc.height = Math.min(sliceH, canvas.height - y);
-            sc.getContext('2d')!.drawImage(canvas, 0, -y);
-            pdf.addImage(sc.toDataURL('image/png'), 'PNG', 0, 0, pageW, sc.height / ratio);
-            y += sliceH; if (y < canvas.height) pdf.addPage();
-          }
-        }
+        renderCanvasToPdf(canvas, pdf, safeBreaksSimple);
         pdf.save(filename);
       });
     });
