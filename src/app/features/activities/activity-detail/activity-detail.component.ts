@@ -811,10 +811,15 @@ export class ActivityDetailComponent implements OnInit {
       <hr style="border:none;border-top:2px solid #2E7D32;margin-bottom:16px">
 
       <!-- Summary row -->
-      <div style="display:flex;gap:12px;margin-bottom:16px">
+      ${(() => {
+        const orphanSum = orphans.reduce((s, b) => s + (b.value_received ?? 0), 0);
+        const familySum = families.reduce((s, b) => s + (b.value_received ?? 0), 0);
+        const mru = t('MRU', 'أوقية جديدة');
+        return `
+      <div style="display:flex;gap:12px;margin-bottom:8px">
         <div style="flex:1;background:#E8F5E9;border-radius:10px;padding:12px 16px;text-align:center">
           <div style="font-size:10px;color:#555;margin-bottom:4px">${t('Coût total', 'التكلفة الإجمالية')}</div>
-          <div style="font-size:18px;font-weight:800;color:#2E7D32">${a.total_cost ? a.total_cost.toLocaleString('fr-FR') : '0'} <span style="font-size:11px;font-weight:500">${t('MRU', 'أوقية جديدة')}</span></div>
+          <div style="font-size:18px;font-weight:800;color:#2E7D32">${a.total_cost ? a.total_cost.toLocaleString('fr-FR') : '0'} <span style="font-size:11px;font-weight:500">${mru}</span></div>
         </div>
         <div style="flex:1;background:#E3F2FD;border-radius:10px;padding:12px 16px;text-align:center">
           <div style="font-size:10px;color:#555;margin-bottom:4px">${t('Bénéficiaires', 'المستفيدون')}</div>
@@ -826,6 +831,22 @@ export class ActivityDetailComponent implements OnInit {
           <div style="font-size:18px;font-weight:800;color:#E65100">${(a.items || []).length}</div>
         </div>` : ''}
       </div>
+      ${a.payment_type === 'financial' && (orphans.length || families.length) ? `
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        ${orphans.length ? `
+        <div style="flex:1;background:#F1F8E9;border-radius:10px;padding:10px 14px;text-align:center;border:1px solid #C5E1A5">
+          <div style="font-size:10px;color:#555;margin-bottom:4px">${t('Somme orphelins', 'مجموع الأيتام')}</div>
+          <div style="font-size:15px;font-weight:800;color:#33691E">${orphanSum.toLocaleString('fr-FR')} <span style="font-size:10px;font-weight:500">${mru}</span></div>
+          <div style="font-size:10px;color:#888;margin-top:2px">${orphans.length} ${t('orphelin(s)', 'يتيم')}</div>
+        </div>` : ''}
+        ${families.length ? `
+        <div style="flex:1;background:#FFF8E1;border-radius:10px;padding:10px 14px;text-align:center;border:1px solid #FFE082">
+          <div style="font-size:10px;color:#555;margin-bottom:4px">${t('Somme familles', 'مجموع الأسر')}</div>
+          <div style="font-size:15px;font-weight:800;color:#E65100">${familySum.toLocaleString('fr-FR')} <span style="font-size:10px;font-weight:500">${mru}</span></div>
+          <div style="font-size:10px;color:#888;margin-top:2px">${families.length} ${t('famille(s)', 'أسرة')}</div>
+        </div>` : ''}
+      </div>` : ''}`;
+      })()}
 
       ${itemsSection}
       ${benefSection}
