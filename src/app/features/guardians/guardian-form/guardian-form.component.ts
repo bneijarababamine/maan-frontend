@@ -13,28 +13,28 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, SearchableSelectComponent],
   template: `
-    <app-page-header [title]="isEdit ? 'Modifier le tuteur' : 'Ajouter un tuteur'" backLink="/guardians"></app-page-header>
+    <app-page-header [title]="(isEdit ? 'GUARDIANS.EDIT' : 'GUARDIANS.ADD') | translate" backLink="/guardians"></app-page-header>
 
     <div class="form-card">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-        <div class="section-title">Informations du tuteur</div>
+        <div class="section-title">{{ 'GUARDIANS.INFO_TITLE' | translate }}</div>
         <div class="form-grid">
           <div class="form-group">
-            <label>Nom du tuteur *</label>
-            <input type="text" formControlName="name" class="form-control" [class.error]="hasError('name')" placeholder="Nom du tuteur">
-            <small class="error-text" *ngIf="hasError('name')">Ce champ est obligatoire</small>
+            <label>{{ 'GUARDIANS.NAME' | translate }} *</label>
+            <input type="text" formControlName="name" class="form-control" [class.error]="hasError('name')">
+            <small class="error-text" *ngIf="hasError('name')">{{ 'COMMON.FIELD_REQUIRED' | translate }}</small>
           </div>
 
           <div class="form-group">
-            <label>Nom du père</label>
-            <input type="text" formControlName="father_name" class="form-control" placeholder="Nom du père décédé">
+            <label>{{ 'ORPHANS.FATHER_NAME' | translate }}</label>
+            <input type="text" formControlName="father_name" class="form-control">
           </div>
 
           <div class="form-group">
-            <label>Téléphone *</label>
+            <label>{{ 'COMMON.PHONE' | translate }} *</label>
             <input type="tel" formControlName="phone" class="form-control" [class.error]="hasError('phone')" placeholder="Ex: 22000000">
-            <small class="error-text" *ngIf="hasError('phone')">{{ phoneError || 'Ce champ est obligatoire' }}</small>
+            <small class="error-text" *ngIf="hasError('phone')">{{ phoneError || ('COMMON.FIELD_REQUIRED' | translate) }}</small>
           </div>
 
           <div class="form-group">
@@ -46,24 +46,24 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
           </div>
 
           <div class="form-group full-width">
-            <label>Adresse</label>
+            <label>{{ 'MEMBERS.ADDRESS' | translate }}</label>
             <app-searchable-select
               [options]="wilayaOptions"
               [value]="selectedAddress"
-              placeholder="— Sélectionner une adresse —"
+              placeholder="—"
               (valueChange)="onAddressSelect($event)">
             </app-searchable-select>
           </div>
 
           <div class="form-group full-width">
-            <label>Notes</label>
-            <textarea formControlName="notes" class="form-control" rows="3" placeholder="Remarques supplémentaires..."></textarea>
+            <label>{{ 'COMMON.NOTES' | translate }}</label>
+            <textarea formControlName="notes" class="form-control" rows="3"></textarea>
           </div>
 
           <div class="form-group">
             <label class="checkbox-label">
               <input type="checkbox" formControlName="is_active">
-              Tuteur actif
+              {{ 'GUARDIANS.ACTIVE' | translate }}
             </label>
           </div>
         </div>
@@ -71,9 +71,9 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" [disabled]="saving">
             <span *ngIf="saving" class="spinner-sm"></span>
-            {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+            {{ (saving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
           </button>
-          <button type="button" class="btn btn-secondary" routerLink="/guardians">Annuler</button>
+          <button type="button" class="btn btn-secondary" routerLink="/guardians">{{ 'COMMON.CANCEL' | translate }}</button>
         </div>
       </form>
     </div>
@@ -81,9 +81,9 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
     <div class="modal-overlay" *ngIf="showErrorModal" (click)="showErrorModal = false">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-icon">⚠️</div>
-        <h3>Erreur</h3>
+        <h3>{{ 'COMMON.ERROR' | translate }}</h3>
         <p>{{ errorMessage }}</p>
-        <button class="btn-close-modal" (click)="showErrorModal = false">Fermer</button>
+        <button class="btn-close-modal" (click)="showErrorModal = false">{{ 'COMMON.CLOSE' | translate }}</button>
       </div>
     </div>
   `,

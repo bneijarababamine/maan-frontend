@@ -63,7 +63,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               <a [routerLink]="['/guardians', orphan.guardian!.id]" class="guardian-link">{{ orphan.guardian!.name }}</a>
             </div>
             <div class="info-row" *ngIf="orphan.guardian?.father_name">
-              <span class="info-key">Nom du père</span>
+              <span class="info-key">{{ 'ORPHANS.FATHER_NAME' | translate }}</span>
               <span>{{ orphan.guardian!.father_name }}</span>
             </div>
             <div class="info-row" *ngIf="orphan.guardian?.phone">

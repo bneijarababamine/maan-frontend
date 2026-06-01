@@ -11,84 +11,82 @@ import { Orphan } from '../../../core/models/orphan.model';
   standalone: true,
   imports: [CommonModule, RouterModule, TranslateModule, PageHeaderComponent],
   template: `
-    <app-page-header [title]="guardian?.name || 'Tuteur'" backLink="/guardians">
+    <app-page-header [title]="guardian?.name || ('MENU.GUARDIANS' | translate)" backLink="/guardians">
       <button [routerLink]="addOrphanLink" class="btn-add-orphan" *ngIf="guardian">
-        + Ajouter un enfant
+        {{ 'GUARDIANS.ADD_CHILD_BTN' | translate }}
       </button>
     </app-page-header>
 
     <div class="detail-container" *ngIf="guardian">
 
-      <!-- Carte tuteur -->
       <div class="info-card">
         <div class="card-top">
           <div class="avatar">{{ guardian.name.charAt(0) }}</div>
           <div class="card-identity">
             <h2>{{ guardian.name }}</h2>
             <p class="father" *ngIf="guardian.father_name">
-              <span class="label-small">Nom du père :</span> <strong>{{ guardian.father_name }}</strong>
+              <span class="label-small">{{ 'ORPHANS.FATHER_NAME' | translate }} :</span> <strong>{{ guardian.father_name }}</strong>
             </p>
             <span [class.badge-active]="guardian.is_active" [class.badge-inactive]="!guardian.is_active" class="status-badge">
-              {{ guardian.is_active ? 'Actif' : 'Inactif' }}
+              {{ (guardian.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
             </span>
           </div>
           <div class="card-actions">
-            <button [routerLink]="['/guardians', guardian.id, 'edit']" class="btn btn-edit">✏️ Modifier</button>
-            <button (click)="askDelete()" class="btn btn-danger">🗑️ Supprimer</button>
+            <button [routerLink]="['/guardians', guardian.id, 'edit']" class="btn btn-edit">✏️ {{ 'COMMON.EDIT' | translate }}</button>
+            <button (click)="askDelete()" class="btn btn-danger">🗑️ {{ 'COMMON.DELETE' | translate }}</button>
           </div>
         </div>
 
         <div class="info-grid">
           <div class="info-item">
-            <label>Téléphone</label>
+            <label>{{ 'COMMON.PHONE' | translate }}</label>
             <div class="value phone-row">
               <span>{{ guardian.phone }}</span>
-              <button class="copy-btn" (click)="copy(guardian.phone)" title="Copier">📋</button>
+              <button class="copy-btn" (click)="copy(guardian.phone)">📋</button>
             </div>
           </div>
           <div class="info-item" *ngIf="guardian.whatsapp">
             <label>WhatsApp</label>
             <div class="value phone-row">
               <span>📱 {{ guardian.whatsapp }}</span>
-              <button class="copy-btn" (click)="copy(guardian.whatsapp!)" title="Copier">📋</button>
+              <button class="copy-btn" (click)="copy(guardian.whatsapp!)">📋</button>
             </div>
           </div>
           <div class="info-item" *ngIf="guardian.address">
-            <label>Adresse</label>
+            <label>{{ 'MEMBERS.ADDRESS' | translate }}</label>
             <div class="value">{{ guardian.address }}</div>
           </div>
           <div class="info-item" *ngIf="guardian.notes">
-            <label>Notes</label>
+            <label>{{ 'COMMON.NOTES' | translate }}</label>
             <div class="value">{{ guardian.notes }}</div>
           </div>
         </div>
       </div>
 
-      <!-- Liste des enfants -->
       <div class="orphans-card">
         <div class="section-header">
-          <h3>Enfants ({{ orphans.length }})</h3>
-          <a [routerLink]="addOrphanLink" class="btn-add-orphan">+ Ajouter un enfant</a>
+          <h3>{{ 'GUARDIANS.CHILDREN' | translate }} ({{ orphans.length }})</h3>
+          <a [routerLink]="addOrphanLink" class="btn-add-orphan">{{ 'GUARDIANS.ADD_CHILD_BTN' | translate }}</a>
         </div>
 
         <div *ngIf="orphans.length === 0" class="empty-state">
           <div class="empty-icon">📭</div>
-          <p>Aucun enfant enregistré pour ce tuteur.</p>
-          <a [routerLink]="addOrphanLink" class="btn-add-orphan big">+ Ajouter le premier enfant</a>
+          <p>{{ 'ORPHANS.NO_CHILDREN' | translate }}</p>
+          <a [routerLink]="addOrphanLink" class="btn-add-orphan big">{{ 'GUARDIANS.ADD_FIRST_CHILD_BTN' | translate }}</a>
         </div>
 
         <table *ngIf="orphans.length > 0" class="orphans-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Nom complet</th>
-              <th>Genre</th>
-              <th>Année naiss.</th>
-              <th>Âge</th>
-              <th>École</th>
-              <th>Classe</th>
-              <th>Statut</th>
-              <th>Actions</th>
+              <th>{{ 'ORPHANS.FULL_NAME'  | translate }}</th>
+              <th>{{ 'ORPHANS.GENDER'     | translate }}</th>
+              <th>{{ 'ORPHANS.BIRTH_YEAR' | translate }}</th>
+              <th>{{ 'ORPHANS.AGE'        | translate }}</th>
+              <th>{{ 'ORPHANS.SCHOOL'     | translate }}</th>
+              <th>{{ 'ORPHANS.GRADE'      | translate }}</th>
+              <th>{{ 'COMMON.STATUS'      | translate }}</th>
+              <th>{{ 'COMMON.ACTIONS'     | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -97,13 +95,13 @@ import { Orphan } from '../../../core/models/orphan.model';
               <td class="td-name">{{ o.display_name }}</td>
               <td>
                 <span class="gender-badge" [class.male]="o.gender === 'male'" [class.female]="o.gender === 'female'">
-                  {{ o.gender === 'male' ? 'Garçon' : 'Fille' }}
+                  {{ (o.gender === 'male' ? 'ORPHANS.MALE' : 'ORPHANS.FEMALE') | translate }}
                 </span>
               </td>
               <td class="td-year">{{ o.birth_year }}</td>
               <td>
                 <span [class.near-18]="!o.is_adult && (o.months_until_18 ?? 99) <= 6">
-                  {{ o.age }} ans
+                  {{ o.age }} {{ 'COMMON.YEARS' | translate }}
                 </span>
                 <span class="adult-tag" *ngIf="o.is_adult">18+</span>
               </td>
@@ -111,11 +109,11 @@ import { Orphan } from '../../../core/models/orphan.model';
               <td>{{ o.grade || '—' }}</td>
               <td>
                 <span class="dot" [class.dot-active]="o.is_active" [class.dot-inactive]="!o.is_active"></span>
-                {{ o.is_active ? 'Actif' : 'Inactif' }}
+                {{ (o.is_active ? 'ORPHANS.STATUS_ACTIVE' : 'ORPHANS.STATUS_INACTIVE') | translate }}
               </td>
               <td class="td-actions">
-                <button [routerLink]="['/orphans', o.id]" class="btn-icon" title="Voir">👁️</button>
-                <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon" title="Modifier">✏️</button>
+                <button [routerLink]="['/orphans', o.id]" class="btn-icon">👁️</button>
+                <button [routerLink]="['/orphans', o.id, 'edit']" class="btn-icon">✏️</button>
               </td>
             </tr>
           </tbody>
@@ -127,14 +125,12 @@ import { Orphan } from '../../../core/models/orphan.model';
     <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-icon">⚠️</div>
-        <h3>Confirmer la suppression</h3>
-        <p *ngIf="orphans.length > 0">
-          Ce tuteur a <strong>{{ orphans.length }} enfant(s)</strong>. Ces enfants seront dé-liés du tuteur.
-        </p>
-        <p *ngIf="orphans.length === 0">Supprimer définitivement ce tuteur ?</p>
+        <h3>{{ 'COMMON.CONFIRM_DELETE' | translate }}</h3>
+        <p *ngIf="orphans.length > 0">{{ 'GUARDIANS.DELETE_WITH_CHILDREN' | translate:{count: orphans.length} }}</p>
+        <p *ngIf="orphans.length === 0">{{ 'GUARDIANS.DELETE_SIMPLE' | translate }}</p>
         <div class="modal-actions">
-          <button class="btn-cancel" (click)="showDeleteModal = false">Annuler</button>
-          <button class="btn-delete" (click)="confirmDelete()">Supprimer</button>
+          <button class="btn-cancel" (click)="showDeleteModal = false">{{ 'COMMON.CANCEL' | translate }}</button>
+          <button class="btn-delete" (click)="confirmDelete()">{{ 'COMMON.DELETE' | translate }}</button>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { GuardianService, Guardian } from '../../../core/services/guardian.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { FormsModule } from '@angular/forms';
@@ -15,41 +15,37 @@ import autoTable from 'jspdf-autotable';
   standalone: true,
   imports: [CommonModule, RouterModule, TranslateModule, PageHeaderComponent, FormsModule],
   template: `
-    <app-page-header title="Tuteurs">
+    <app-page-header [title]="'MENU.GUARDIANS' | translate">
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn-pdf" (click)="exportPdf()" [disabled]="pdfLoading">
           <span *ngIf="pdfLoading" class="spinner-sm"></span>
           <span *ngIf="!pdfLoading">PDF</span>
         </button>
-        <button routerLink="/guardians/new" class="btn-add">+ Ajouter un tuteur</button>
+        <button routerLink="/guardians/new" class="btn-add">+ {{ 'GUARDIANS.ADD' | translate }}</button>
       </div>
     </app-page-header>
 
     <div class="list-container">
-      <!-- Recherche -->
       <div class="filters-section">
         <div class="search-box">
           <input
             type="text"
             class="search-input"
-            placeholder="Rechercher par nom, téléphone..."
+            [placeholder]="'GUARDIANS.SEARCH_PLACEHOLDER' | translate"
             [(ngModel)]="searchText"
             (input)="onSearch()">
           <span class="search-icon">🔍</span>
         </div>
         <div class="filter-status">
-          <button [class.active]="statusFilter === null"     (click)="setStatus(null)"       class="status-btn">Tous</button>
-          <button [class.active]="statusFilter === 'active'" (click)="setStatus('active')"   class="status-btn">Actif</button>
-          <button [class.active]="statusFilter === 'inactive'" (click)="setStatus('inactive')" class="status-btn">Inactif</button>
+          <button [class.active]="statusFilter === null"       (click)="setStatus(null)"       class="status-btn">{{ 'COMMON.ALL'      | translate }}</button>
+          <button [class.active]="statusFilter === 'active'"   (click)="setStatus('active')"   class="status-btn">{{ 'COMMON.ACTIVE'   | translate }}</button>
+          <button [class.active]="statusFilter === 'inactive'" (click)="setStatus('inactive')" class="status-btn">{{ 'COMMON.INACTIVE' | translate }}</button>
         </div>
       </div>
 
-      <!-- Liste des tuteurs -->
       <div class="guardians-list">
-
         <div *ngFor="let guardian of guardians" class="guardian-card" [class.inactive]="!guardian.is_active">
 
-          <!-- En-tête du tuteur -->
           <div class="guardian-header" (click)="toggleGuardian(guardian.id)">
             <div class="guardian-left">
               <div class="guardian-avatar">{{ guardian.name.charAt(0) }}</div>
@@ -63,43 +59,40 @@ import autoTable from 'jspdf-autotable';
               </div>
             </div>
             <div class="guardian-right">
-              <span class="orphans-badge">{{ guardian.orphans_count || 0 }} enfant(s)</span>
+              <span class="orphans-badge">{{ guardian.orphans_count || 0 }} {{ 'GUARDIANS.ORPHANS_COUNT' | translate }}</span>
               <span [class.status-active]="guardian.is_active" [class.status-inactive]="!guardian.is_active" class="status-badge">
-                {{ guardian.is_active ? 'Actif' : 'Inactif' }}
+                {{ (guardian.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
               </span>
               <div class="actions">
-                <button [routerLink]="['/guardians', guardian.id, 'edit']" class="btn-icon" title="Modifier" (click)="$event.stopPropagation()">✏️</button>
-                <button (click)="$event.stopPropagation(); askDelete(guardian)" class="btn-icon btn-del" title="Supprimer">🗑️</button>
+                <button [routerLink]="['/guardians', guardian.id, 'edit']" class="btn-icon" (click)="$event.stopPropagation()">✏️</button>
+                <button (click)="$event.stopPropagation(); askDelete(guardian)" class="btn-icon btn-del">🗑️</button>
               </div>
               <span class="expand-icon">{{ expandedId === guardian.id ? '▲' : '▼' }}</span>
             </div>
           </div>
 
-          <!-- Sous-liste des orphelins -->
           <div class="orphans-sublist" *ngIf="expandedId === guardian.id">
             <div class="sublist-header">
-              <span>Enfants de {{ guardian.name }}</span>
-              <a [routerLink]="['/guardians', guardian.id]"
-                 [queryParams]="{ tab: 'add' }"
-                 class="btn-add-orphan">
-                + Ajouter un enfant
+              <span>{{ 'GUARDIANS.CHILDREN_OF' | translate:{name: guardian.name} }}</span>
+              <a [routerLink]="['/guardians', guardian.id]" [queryParams]="{ tab: 'add' }" class="btn-add-orphan">
+                {{ 'GUARDIANS.ADD_CHILD_BTN' | translate }}
               </a>
             </div>
 
             <div *ngIf="!guardian.orphans || guardian.orphans.length === 0" class="no-orphans">
-              Aucun enfant enregistré pour ce tuteur.
+              {{ 'ORPHANS.NO_CHILDREN' | translate }}
             </div>
 
             <table *ngIf="guardian.orphans && guardian.orphans.length > 0" class="orphans-table">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Nom complet</th>
-                  <th>Genre</th>
-                  <th>Année naiss.</th>
-                  <th>Âge</th>
-                  <th>École</th>
-                  <th>Statut</th>
+                  <th>{{ 'ORPHANS.FULL_NAME'  | translate }}</th>
+                  <th>{{ 'ORPHANS.GENDER'     | translate }}</th>
+                  <th>{{ 'ORPHANS.BIRTH_YEAR' | translate }}</th>
+                  <th>{{ 'ORPHANS.AGE'        | translate }}</th>
+                  <th>{{ 'ORPHANS.SCHOOL'     | translate }}</th>
+                  <th>{{ 'COMMON.STATUS'      | translate }}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -109,18 +102,18 @@ import autoTable from 'jspdf-autotable';
                   <td class="td-name">{{ o.display_name }}</td>
                   <td class="td-gender">
                     <span class="gender-badge" [class.male]="o.gender === 'male'" [class.female]="o.gender === 'female'">
-                      {{ o.gender === 'male' ? 'Garçon' : 'Fille' }}
+                      {{ (o.gender === 'male' ? 'ORPHANS.MALE' : 'ORPHANS.FEMALE') | translate }}
                     </span>
                   </td>
                   <td class="td-year">{{ o.birth_year }}</td>
-                  <td class="td-age">{{ o.age }} ans</td>
+                  <td class="td-age">{{ o.age }} {{ 'COMMON.YEARS' | translate }}</td>
                   <td class="td-school">{{ o.school_name || '—' }}</td>
                   <td class="td-status">
                     <span class="dot" [class.dot-active]="o.is_active" [class.dot-inactive]="!o.is_active"></span>
-                    {{ o.is_active ? 'Actif' : 'Inactif' }}
+                    {{ (o.is_active ? 'ORPHANS.STATUS_ACTIVE' : 'ORPHANS.STATUS_INACTIVE') | translate }}
                   </td>
                   <td class="td-actions">
-                    <button [routerLink]="['/orphans', o.id]" class="btn-icon" title="Voir">👁️</button>
+                    <button [routerLink]="['/orphans', o.id]" class="btn-icon">👁️</button>
                   </td>
                 </tr>
               </tbody>
@@ -130,7 +123,7 @@ import autoTable from 'jspdf-autotable';
 
         <div *ngIf="guardians.length === 0" class="empty-state">
           <div class="empty-icon">👤</div>
-          <p>Aucun tuteur trouvé.</p>
+          <p>{{ 'GUARDIANS.NO_DATA' | translate }}</p>
         </div>
       </div>
     </div>
@@ -139,11 +132,11 @@ import autoTable from 'jspdf-autotable';
     <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-icon">🗑️</div>
-        <h3>Confirmer la suppression</h3>
-        <p>Supprimer le tuteur <strong>{{ deleteTarget?.name }}</strong> ?</p>
+        <h3>{{ 'COMMON.CONFIRM_DELETE' | translate }}</h3>
+        <p>{{ 'GUARDIANS.DELETE_MSG' | translate:{name: deleteTarget?.name} }}</p>
         <div class="modal-actions">
-          <button class="btn-cancel" (click)="showDeleteModal = false">Annuler</button>
-          <button class="btn-delete" (click)="confirmDelete()">Supprimer</button>
+          <button class="btn-cancel" (click)="showDeleteModal = false">{{ 'COMMON.CANCEL' | translate }}</button>
+          <button class="btn-delete" (click)="confirmDelete()">{{ 'COMMON.DELETE' | translate }}</button>
         </div>
       </div>
     </div>
@@ -245,7 +238,7 @@ export class GuardiansListComponent implements OnInit {
   deleteTarget: Guardian | null = null;
   pdfLoading = false;
 
-  constructor(private guardianService: GuardianService) {}
+  constructor(private guardianService: GuardianService, private translate: TranslateService) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -299,15 +292,20 @@ export class GuardiansListComponent implements OnInit {
   }
 
   private generatePdf(): void {
-    const doc  = new jsPDF();
+    const t = (key: string, params?: any) => this.translate.instant(key, params);
+    const doc   = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
 
-    // ── En-tête ───────────────────────────────────────────
+    const male   = t('ORPHANS.MALE');
+    const female = t('ORPHANS.FEMALE');
+    const active = t('ORPHANS.STATUS_ACTIVE');
+    const inactive = t('ORPHANS.STATUS_INACTIVE');
+
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(46, 125, 50);
-    doc.text('Liste des Orphelins par Tuteur', 14, 18);
+    doc.text(t('ORPHANS.EXPORT_BY_GUARDIAN'), 14, 18);
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -322,10 +320,8 @@ export class GuardiansListComponent implements OnInit {
       if (orphans.length === 0) continue;
       totalOrphans += orphans.length;
 
-      // S'assurer qu'il y a assez de place pour le bloc tuteur
       if (y > pageH - 50) { doc.addPage(); y = 20; }
 
-      // ── Bloc tuteur ───────────────────────────────────
       doc.setFillColor(232, 245, 233);
       doc.roundedRect(14, y, pageW - 28, 20, 3, 3, 'F');
 
@@ -338,29 +334,28 @@ export class GuardiansListComponent implements OnInit {
         doc.setFontSize(8.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(90);
-        doc.text(`Père : ${guardian.father_name}`, 19, y + 15);
+        doc.text(`${t('ORPHANS.FATHER_NAME')} : ${guardian.father_name}`, 19, y + 15);
       }
 
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(90);
-      doc.text(`Tél : ${guardian.phone}`, pageW - 18, y + 8, { align: 'right' });
-      doc.text(`${orphans.length} enfant(s)`, pageW - 18, y + 15, { align: 'right' });
+      doc.text(`${t('COMMON.PHONE')} : ${guardian.phone}`, pageW - 18, y + 8, { align: 'right' });
+      doc.text(`${orphans.length} ${t('GUARDIANS.ORPHANS_COUNT')}`, pageW - 18, y + 15, { align: 'right' });
 
       y += 23;
 
-      // ── Tableau des orphelins ─────────────────────────
       autoTable(doc, {
         startY: y,
-        head: [['#', 'Nom complet', 'Genre', 'Naiss.', 'Âge', 'École', 'Statut']],
+        head: [['#', t('ORPHANS.FULL_NAME'), t('ORPHANS.GENDER'), t('ORPHANS.BIRTH_YEAR'), t('ORPHANS.AGE'), t('ORPHANS.SCHOOL'), t('COMMON.STATUS')]],
         body: orphans.map((o: any, i: number) => [
           i + 1,
           o.display_name || o.full_name || '—',
-          o.gender === 'male' ? 'Garçon' : 'Fille',
+          o.gender === 'male' ? male : female,
           o.birth_year || '—',
-          o.age != null ? `${o.age} ans` : '—',
+          o.age != null ? `${o.age} ${t('COMMON.YEARS')}` : '—',
           o.school_name || '—',
-          o.is_active ? 'Actif' : 'Inactif',
+          o.is_active ? active : inactive,
         ]),
         styles: { fontSize: 8, cellPadding: 2.5 },
         headStyles: { fillColor: [46, 125, 50], textColor: 255, fontStyle: 'bold', fontSize: 8 },
@@ -377,11 +372,11 @@ export class GuardiansListComponent implements OnInit {
           if (data.section !== 'body') return;
           const val = data.cell.raw as string;
           if (data.column.index === 2) {
-            data.cell.styles.textColor = val === 'Garçon' ? [21, 101, 192] : [173, 20, 87];
+            data.cell.styles.textColor = val === male ? [21, 101, 192] : [173, 20, 87];
             data.cell.styles.fontStyle = 'bold';
           }
           if (data.column.index === 6) {
-            data.cell.styles.textColor = val === 'Actif' ? [46, 125, 50] : [198, 40, 40];
+            data.cell.styles.textColor = val === active ? [46, 125, 50] : [198, 40, 40];
           }
         },
       });
@@ -389,12 +384,11 @@ export class GuardiansListComponent implements OnInit {
       y = (doc as any).lastAutoTable.finalY + 12;
     }
 
-    // ── Pied de page total ────────────────────────────────
     if (y > pageH - 20) { doc.addPage(); y = 20; }
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(46, 125, 50);
-    doc.text(`Total : ${totalOrphans} orphelin(s)  |  ${this.guardians.filter(g => (g.orphans_count ?? 0) > 0).length} tuteur(s)`, 14, y);
+    doc.text(`${t('COMMON.TOTAL')} : ${totalOrphans} ${t('ORPHANS.TITLE').toLowerCase()}  |  ${this.guardians.filter(g => (g.orphans_count ?? 0) > 0).length} ${t('MENU.GUARDIANS').toLowerCase()}`, 14, y);
 
     doc.save(`orphelins-par-tuteur-${new Date().toISOString().slice(0,10)}.pdf`);
   }

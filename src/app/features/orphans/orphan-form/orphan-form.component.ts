@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrphanService } from '../../../core/services/orphan.service';
 import { GuardianService } from '../../../core/services/guardian.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -15,7 +15,7 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, PhotoUploadComponent, SearchableSelectComponent],
   template: `
     <app-page-header
-      [title]="isEdit ? pageTitle.edit : pageTitle.add"
+      [title]="(isEdit ? 'ORPHANS.EDIT' : 'ORPHANS.ADD') | translate"
       [backLink]="backLink">
     </app-page-header>
 
@@ -24,23 +24,23 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
         <div class="form-grid">
 
           <div class="form-group">
-            <label>Prénom *</label>
-            <input type="text" formControlName="full_name" class="form-control" [class.error]="hasError('full_name')" placeholder="Prénom de l'enfant">
-            <small class="error-text" *ngIf="hasError('full_name')">Ce champ est obligatoire</small>
+            <label>{{ 'ORPHANS.FIRST_NAME' | translate }} *</label>
+            <input type="text" formControlName="full_name" class="form-control" [class.error]="hasError('full_name')">
+            <small class="error-text" *ngIf="hasError('full_name')">{{ 'COMMON.FIELD_REQUIRED' | translate }}</small>
           </div>
 
           <div class="form-group">
-            <label>Genre *</label>
+            <label>{{ 'ORPHANS.GENDER' | translate }} *</label>
             <app-searchable-select
               [options]="genderOptions"
               [value]="selectedGender"
-              placeholder="— Genre —"
+              placeholder="—"
               (valueChange)="onGenderSelect($event)">
             </app-searchable-select>
           </div>
 
           <div class="form-group">
-            <label>Année de naissance *</label>
+            <label>{{ 'ORPHANS.BIRTH_YEAR_LABEL' | translate }} *</label>
             <input
               type="number"
               formControlName="birth_year"
@@ -49,39 +49,38 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
               placeholder="Ex: 2010"
               [min]="1980"
               [max]="currentYear">
-            <small class="error-text" *ngIf="hasError('birth_year')">Entrez une année valide (1980–{{ currentYear }})</small>
+            <small class="error-text" *ngIf="hasError('birth_year')">{{ 'COMMON.FIELD_REQUIRED' | translate }}</small>
           </div>
 
-          <!-- Nom affiché (calculé) -->
           <div class="form-group display-name-preview" *ngIf="displayNamePreview">
-            <label>Nom affiché</label>
+            <label>{{ 'ORPHANS.DISPLAY_NAME' | translate }}</label>
             <div class="preview-box">{{ displayNamePreview }}</div>
           </div>
 
           <div class="form-group">
-            <label>École</label>
-            <input type="text" formControlName="school_name" class="form-control" placeholder="Nom de l'école">
+            <label>{{ 'ORPHANS.SCHOOL' | translate }}</label>
+            <input type="text" formControlName="school_name" class="form-control">
           </div>
 
           <div class="form-group">
-            <label>Niveau scolaire</label>
-            <input type="text" formControlName="grade" class="form-control" placeholder="Ex: 3ème année">
+            <label>{{ 'ORPHANS.GRADE' | translate }}</label>
+            <input type="text" formControlName="grade" class="form-control">
           </div>
 
           <div class="form-group">
             <label class="checkbox-label">
               <input type="checkbox" formControlName="is_active">
-              Orphelin actif
+              {{ 'ORPHANS.ACTIVE_ORPHAN' | translate }}
             </label>
           </div>
 
           <div class="form-group full-width">
-            <label>Notes</label>
-            <textarea formControlName="notes" class="form-control" rows="3" placeholder="Remarques..."></textarea>
+            <label>{{ 'COMMON.NOTES' | translate }}</label>
+            <textarea formControlName="notes" class="form-control" rows="3"></textarea>
           </div>
 
           <div class="form-group photo-group">
-            <label>Photo</label>
+            <label>{{ 'COMMON.PHOTO' | translate }}</label>
             <app-photo-upload (fileSelected)="onPhotoSelected($event)"></app-photo-upload>
           </div>
         </div>
@@ -89,9 +88,9 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" [disabled]="saving">
             <span *ngIf="saving" class="spinner-sm"></span>
-            {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+            {{ (saving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
           </button>
-          <button type="button" class="btn btn-secondary" [routerLink]="backLink">Annuler</button>
+          <button type="button" class="btn btn-secondary" [routerLink]="backLink">{{ 'COMMON.CANCEL' | translate }}</button>
         </div>
       </form>
     </div>
@@ -99,9 +98,9 @@ import { SearchableSelectComponent, SelectOption } from '../../../shared/compone
     <div class="modal-overlay" *ngIf="showErrorModal" (click)="showErrorModal = false">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-icon">⚠️</div>
-        <h3>Erreur</h3>
+        <h3>{{ 'COMMON.ERROR' | translate }}</h3>
         <p>{{ errorMessage }}</p>
-        <button class="btn-close-modal" (click)="showErrorModal = false">Fermer</button>
+        <button class="btn-close-modal" (click)="showErrorModal = false">{{ 'COMMON.CLOSE' | translate }}</button>
       </div>
     </div>
   `,
@@ -146,13 +145,9 @@ export class OrphanFormComponent implements OnInit {
   guardianId: number | null = null;
   fatherName = '';
   photoFile: File | null = null;
-  genderOptions: SelectOption[] = [
-    { id: 'male',   label: 'Garçon' },
-    { id: 'female', label: 'Fille'  },
-  ];
+  genderOptions: SelectOption[] = [];
   selectedGender = 'male';
   currentYear = new Date().getFullYear();
-  pageTitle = { edit: 'Modifier orphelin', add: 'Ajouter un orphelin' };
 
   get displayNamePreview(): string {
     const name = this.form.get('full_name')?.value?.trim();
@@ -169,10 +164,16 @@ export class OrphanFormComponent implements OnInit {
     private orphanService: OrphanService,
     private guardianService: GuardianService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
+    this.genderOptions = [
+      { id: 'male',   label: this.translate.instant('ORPHANS.MALE') },
+      { id: 'female', label: this.translate.instant('ORPHANS.FEMALE') },
+    ];
+
     this.form = this.fb.group({
       full_name:   ['', Validators.required],
       birth_year:  ['', [Validators.required, Validators.min(1980), Validators.max(this.currentYear)]],
