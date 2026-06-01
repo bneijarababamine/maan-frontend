@@ -44,6 +44,9 @@ export interface ActivityBeneficiary {
   beneficiary_type: 'orphan' | 'family' | 'member';
   beneficiary_id: number;
   beneficiary_name?: string;
+  guardian_id?: number;
+  guardian_name?: string;
+  guardian_father_name?: string;
   value_received?: number;
   notes?: string;
   payment_method?: string;

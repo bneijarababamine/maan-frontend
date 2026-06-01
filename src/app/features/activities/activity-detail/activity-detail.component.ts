@@ -158,7 +158,7 @@ import html2canvas from 'html2canvas';
             <ng-container *ngIf="activity.payment_type === 'financial'">
               <div class="amount-wrap">
                 <input type="number" class="form-control" [(ngModel)]="benefAmount"
-                       [placeholder]="'COMMON.AMOUNT' | translate" min="0">
+                       [placeholder]="(benefType === 'orphan' ? 'ACTIVITIES.TOTAL_AMOUNT_GUARDIAN' : 'COMMON.AMOUNT') | translate" min="0">
                 <span class="addon">{{ 'COMMON.MRU' | translate }}</span>
               </div>
               <div class="field-group">
@@ -187,11 +187,37 @@ import html2canvas from 'html2canvas';
           <div *ngIf="(activity.beneficiaries?.length || 0) === 0 && !showBenefForm" class="empty-state">
             {{ 'COMMON.NO_DATA' | translate }}
           </div>
-          <div *ngFor="let b of activity.beneficiaries" class="benef-card">
-            <div class="benef-icon">{{ b.beneficiary_type === 'orphan' ? '🧒' : '🏠' }}</div>
+
+          <!-- Orphan beneficiaries: grouped by guardian -->
+          <div *ngFor="let grp of groupedOrphanBeneficiaries" class="benef-guardian-card">
+            <div class="bg-header">
+              <div class="bg-icon">🧒</div>
+              <div class="bg-info">
+                <strong>{{ grp.guardian_name || '—' }}</strong>
+                <span class="benef-type">{{ grp.guardian_father_name ? ('ORPHANS.FATHER_NAME' | translate) + ': ' + grp.guardian_father_name : '' }}</span>
+                <div *ngIf="grp.orphans[0]?.payment_method" class="benef-bank-row">
+                  <span class="bank-badge">{{ getBankLabel(grp.orphans[0].payment_method) }}</span>
+                </div>
+              </div>
+              <div class="bg-right">
+                <div *ngIf="activity.payment_type === 'financial'" class="benef-amount">
+                  {{ grp.total_amount | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}
+                </div>
+                <span class="orphan-count-badge">{{ grp.orphans.length }} {{ 'ORPHANS.CHILDREN_COUNT' | translate }}</span>
+                <button class="remove-benef" (click)="confirmDeleteBenefGroup(grp)">✕</button>
+              </div>
+            </div>
+            <div class="bg-orphans">
+              <span *ngFor="let o of grp.orphans" class="orphan-tag">{{ o.beneficiary_name }}</span>
+            </div>
+          </div>
+
+          <!-- Family beneficiaries: flat cards -->
+          <div *ngFor="let b of familyBeneficiaries" class="benef-card">
+            <div class="benef-icon">🏠</div>
             <div class="benef-info">
               <strong>{{ b.beneficiary_name || ('ID: ' + b.beneficiary_id) }}</strong>
-              <span class="benef-type">{{ b.beneficiary_type === 'orphan' ? ('MENU.ORPHANS' | translate) : ('MENU.FAMILIES' | translate) }}</span>
+              <span class="benef-type">{{ 'MENU.FAMILIES' | translate }}</span>
               <div *ngIf="b.payment_method" class="benef-bank-row">
                 <span class="bank-badge">{{ getBankLabel(b.payment_method) }}</span>
                 <a *ngIf="b.screenshot_url" [href]="b.screenshot_url" target="_blank" class="screenshot-link">📎</a>
@@ -257,6 +283,15 @@ import html2canvas from 'html2canvas';
     .benef-amount { font-weight: 700; color: #2E7D32; font-size: 14px; white-space: nowrap; }
     .remove-benef { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; flex-shrink: 0; }
     .remove-benef:hover { color: #C62828; }
+    .benef-guardian-card { border: 1px solid #e8f5e9; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+    .bg-header { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f1f8e9; }
+    .bg-icon { font-size: 22px; flex-shrink: 0; }
+    .bg-info { flex: 1; min-width: 0; }
+    .bg-info strong { display: block; font-size: 14px; font-weight: 700; }
+    .bg-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .orphan-count-badge { background: #c8e6c9; color: #1b5e20; border-radius: 10px; padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .bg-orphans { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; background: #fafafa; border-top: 1px solid #e8f5e9; }
+    .orphan-tag { background: #fff; border: 1px solid #c8e6c9; border-radius: 12px; padding: 3px 10px; font-size: 12px; color: #2e7d32; font-weight: 600; }
     /* Items table */
     .item-bank-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f0f7f0; border-radius: 8px; margin-bottom: 12px; font-size: 13px; color: #2E7D32; }
     .item-bank-name { font-weight: 700; }
@@ -338,6 +373,31 @@ export class ActivityDetailComponent implements OnInit {
   get currentEntityOptions(): SelectOption[] {
     if (this.benefType === 'orphan') return this.guardianOptions;
     return this.familyOptions;
+  }
+
+  get familyBeneficiaries(): any[] {
+    return (this.activity?.beneficiaries || []).filter(b => b.beneficiary_type === 'family');
+  }
+
+  get groupedOrphanBeneficiaries(): any[] {
+    const orphans = (this.activity?.beneficiaries || []).filter(b => b.beneficiary_type === 'orphan');
+    const groups = new Map<string, any>();
+    for (const b of orphans) {
+      const key = String(b.guardian_id ?? `__no_guardian_${b.beneficiary_id}`);
+      if (!groups.has(key)) {
+        groups.set(key, {
+          guardian_id: b.guardian_id,
+          guardian_name: b.guardian_name,
+          guardian_father_name: b.guardian_father_name,
+          total_amount: 0,
+          orphans: []
+        });
+      }
+      const grp = groups.get(key);
+      grp.total_amount += b.value_received ?? 0;
+      grp.orphans.push(b);
+    }
+    return Array.from(groups.values());
   }
 
   private typeIcons: Record<string, string> = {
@@ -452,11 +512,14 @@ export class ActivityDetailComponent implements OnInit {
             return o.age <= limit;
           });
           if (active.length === 0) { this.savingBenef = false; return; }
+          const perOrphan = this.activity!.payment_type === 'financial' && this.benefAmount
+            ? (this.benefAmount / active.length)
+            : undefined;
           const calls = active.map(o => {
             const d: Partial<ActivityBeneficiary> = {
               beneficiary_type: 'orphan',
               beneficiary_id: o.id,
-              value_received: this.activity!.payment_type === 'financial' ? (this.benefAmount ?? undefined) : undefined,
+              value_received: perOrphan,
               payment_method: this.activity!.payment_type === 'financial' ? (this.benefPaymentMethod as string) : undefined,
             };
             return this.service.addBeneficiary(this.activity!.id, d);
@@ -521,6 +584,23 @@ export class ActivityDetailComponent implements OnInit {
       this.service.removeBeneficiary(this.activity!.id, benefId).subscribe({
         next: () => { this.showDeleteDialog = false; this.loadActivity(this.activity!.id); },
         error: () => { this.showDeleteDialog = false; }
+      });
+    };
+    this.showDeleteDialog = true;
+  }
+
+  confirmDeleteBenefGroup(grp: any): void {
+    this.pendingAction = () => {
+      const ids: number[] = grp.orphans.map((o: any) => o.id);
+      let done = 0;
+      ids.forEach(id => {
+        this.service.removeBeneficiary(this.activity!.id, id).subscribe({
+          next: () => {
+            done++;
+            if (done === ids.length) { this.showDeleteDialog = false; this.loadActivity(this.activity!.id); this.refreshBanks(); }
+          },
+          error: () => { this.showDeleteDialog = false; }
+        });
       });
     };
     this.showDeleteDialog = true;
@@ -609,9 +689,59 @@ export class ActivityDetailComponent implements OnInit {
     const orphans  = (a.beneficiaries || []).filter(b => b.beneficiary_type === 'orphan');
     const families = (a.beneficiaries || []).filter(b => b.beneficiary_type === 'family');
 
-    const renderBenefTable = (list: typeof orphans, title: string) => {
-      if (!list.length) return '';
-      const rows = list.map((b, i) => `
+    // Group orphan beneficiaries by guardian
+    const orphanGroups: any[] = [];
+    const groupMap = new Map<string, any>();
+    for (const b of orphans) {
+      const key = String(b.guardian_id ?? `__${b.beneficiary_id}`);
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { guardian_name: b.guardian_name, guardian_father_name: b.guardian_father_name, total: 0, orphans: [] });
+        orphanGroups.push(groupMap.get(key));
+      }
+      const g = groupMap.get(key);
+      g.total += b.value_received ?? 0;
+      g.orphans.push(b);
+    }
+
+    const renderOrphanGroups = () => {
+      if (!orphanGroups.length) return '';
+      const groupsHtml = orphanGroups.map((grp, gi) => {
+        const orphanRows = grp.orphans.map((o: any, i: number) => `
+          <tr style="background:${i % 2 === 0 ? '#fff' : '#f5faf5'}">
+            <td style="padding:4px 10px 4px 22px;color:#555">${o.beneficiary_name || '—'}</td>
+            ${a.payment_type === 'financial'
+              ? `<td style="padding:4px 10px;text-align:center;color:#2E7D32;font-weight:600">${o.value_received ? o.value_received.toLocaleString('fr-FR') + ' ' + t('MRU', 'أوقية') : '—'}</td>`
+              : ''}
+          </tr>`).join('');
+        return `
+          <tr style="background:#E8F5E9">
+            <td style="padding:7px 10px;font-weight:700;color:#1B5E20">
+              ${grp.guardian_name || '—'}
+              ${grp.guardian_father_name ? `<span style="font-weight:400;color:#666;font-size:10px"> — ${t('Père', 'الأب')}: ${grp.guardian_father_name}</span>` : ''}
+              <span style="font-size:10px;color:#555;margin-left:8px">(${grp.orphans.length} ${t('orphelin(s)', 'يتيم')})</span>
+            </td>
+            ${a.payment_type === 'financial'
+              ? `<td style="padding:7px 10px;text-align:center;font-weight:800;color:#2E7D32">${grp.total.toLocaleString('fr-FR')} ${t('MRU', 'أوقية')}</td>`
+              : ''}
+          </tr>
+          ${orphanRows}`;
+      }).join('');
+      return `
+        <h3 style="font-size:13px;font-weight:700;color:#555;margin:16px 0 6px;border-bottom:1px solid #eee;padding-bottom:4px">
+          ${t(`Orphelins (${orphans.length})`, `الأيتام (${orphans.length})`)}
+        </h3>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="background:#2E7D32;color:#fff">
+            <th style="padding:6px 10px;text-align:${textAlign}">${t('Tuteur / Orphelin', 'الولي / اليتيم')}</th>
+            ${a.payment_type === 'financial' ? `<th style="padding:6px 10px;text-align:center;width:120px">${t('Montant', 'المبلغ')}</th>` : ''}
+          </tr></thead>
+          <tbody>${groupsHtml}</tbody>
+        </table>`;
+    };
+
+    const renderFamilyTable = () => {
+      if (!families.length) return '';
+      const rows = families.map((b, i) => `
         <tr style="background:${i % 2 === 0 ? '#fff' : '#f5faf5'}">
           <td style="padding:5px 10px">${b.beneficiary_name || '—'}</td>
           ${a.payment_type === 'financial'
@@ -619,7 +749,9 @@ export class ActivityDetailComponent implements OnInit {
             : ''}
         </tr>`).join('');
       return `
-        <h3 style="font-size:13px;font-weight:700;color:#555;margin:16px 0 6px;border-bottom:1px solid #eee;padding-bottom:4px">${title}</h3>
+        <h3 style="font-size:13px;font-weight:700;color:#555;margin:16px 0 6px;border-bottom:1px solid #eee;padding-bottom:4px">
+          ${t(`Familles (${families.length})`, `الأسر المحتاجة (${families.length})`)}
+        </h3>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr style="background:#2E7D32;color:#fff">
             <th style="padding:6px 10px;text-align:${textAlign}">${t('Nom', 'الاسم')}</th>
@@ -657,8 +789,8 @@ export class ActivityDetailComponent implements OnInit {
       <h2 style="font-size:14px;font-weight:700;color:#333;margin:20px 0 4px">
         ${t('Bénéficiaires', 'المستفيدون')} (${(a.beneficiaries || []).length})
       </h2>
-      ${renderBenefTable(orphans,  t(`Orphelins (${orphans.length})`,  `الأيتام (${orphans.length})`))}
-      ${renderBenefTable(families, t(`Familles (${families.length})`, `الأسر المحتاجة (${families.length})`))}` : '';
+      ${renderOrphanGroups()}
+      ${renderFamilyTable()}` : '';
 
     const container = document.createElement('div');
     container.style.cssText = [
