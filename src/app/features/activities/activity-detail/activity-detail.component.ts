@@ -9,6 +9,7 @@ import { OrphanService } from '../../../core/services/orphan.service';
 import { FamilyService } from '../../../core/services/family.service';
 import { BankService } from '../../../core/services/bank.service';
 import { GuardianService } from '../../../core/services/guardian.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { Orphan } from '../../../core/models/orphan.model';
 import { Family } from '../../../core/models/family.model';
 import { Bank } from '../../../core/models/bank.model';
@@ -343,6 +344,9 @@ export class ActivityDetailComponent implements OnInit {
     school_fees: '📚', eid_help: '🌙', food_basket: '🥗', winter_clothes: '🧥', ramadan: '⭐', other: '📋'
   };
 
+  ageLimitMale   = 18;
+  ageLimitFemale = 21;
+
   constructor(
     private route: ActivatedRoute,
     private service: ActivityService,
@@ -350,6 +354,7 @@ export class ActivityDetailComponent implements OnInit {
     private familyService: FamilyService,
     private bankService: BankService,
     private guardianService: GuardianService,
+    private settingsService: SettingsService,
     private translate: TranslateService
   ) {}
 
@@ -362,6 +367,13 @@ export class ActivityDetailComponent implements OnInit {
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.loadActivity(id);
 
+    this.settingsService.getAll().subscribe({
+      next: res => {
+        const d = res.data ?? {};
+        if (d['age_limit_male'])   this.ageLimitMale   = +d['age_limit_male'];
+        if (d['age_limit_female']) this.ageLimitFemale = +d['age_limit_female'];
+      }
+    });
     this.guardianService.getAll().subscribe({
       next: r => this.guardianOptions = r.data.map(g => ({
         id: g.id,
@@ -434,7 +446,11 @@ export class ActivityDetailComponent implements OnInit {
     if (this.benefType === 'orphan') {
       this.guardianService.getOrphans(+this.benefId).subscribe({
         next: (orphans: any[]) => {
-          const active = orphans.filter(o => o.is_active);
+          const active = orphans.filter(o => {
+            if (!o.is_active) return false;
+            const limit = o.gender === 'male' ? this.ageLimitMale : this.ageLimitFemale;
+            return o.age <= limit;
+          });
           if (active.length === 0) { this.savingBenef = false; return; }
           const calls = active.map(o => {
             const d: Partial<ActivityBeneficiary> = {
