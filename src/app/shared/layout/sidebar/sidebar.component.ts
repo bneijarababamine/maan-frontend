@@ -132,6 +132,7 @@ export class SidebarComponent {
     { icon: 'school',             labelKey: 'MENU.ADULTS',        route: '/adults'        },
     { icon: 'family_restroom',    labelKey: 'MENU.FAMILIES',      route: '/families'      },
     { icon: 'event',              labelKey: 'MENU.ACTIVITIES',    route: '/activities'    },
+    { icon: 'medication',         labelKey: 'MENU.CHRONIC',       route: '/chronic'       },
     { icon: 'manage_search',      labelKey: 'MENU.SEARCH',        route: '/search'        },
     { icon: 'settings',           labelKey: 'MENU.SETTINGS',      route: '/settings'      },
     { icon: 'swap_horiz',         labelKey: 'MENU.GESTION',       route: '/gestion'       },

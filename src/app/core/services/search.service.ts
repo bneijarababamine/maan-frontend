@@ -4,11 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface SearchResult {
-  guardians: SearchPerson[];
-  orphans:   SearchPerson[];
-  members:   SearchPerson[];
-  donors:    SearchPerson[];
-  families:  SearchPerson[];
+  guardians:        SearchPerson[];
+  orphans:          SearchPerson[];
+  members:          SearchPerson[];
+  donors:           SearchPerson[];
+  families:         SearchPerson[];
+  chronic_patients: SearchPerson[];
 }
 
 export interface SearchPerson {
@@ -27,6 +28,9 @@ export interface SearchPerson {
   guardian_name?:     string;
   orphans_count?:     number;
   members_count?:     number;
+  disease_name?:      string;
+  total_spent?:       number;
+  medications?:       any[];
   activity_benefits:  ActivityBenefit[];
   contributions?:     Contribution[];
   donations?:         Donation[];

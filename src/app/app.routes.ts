@@ -152,6 +152,22 @@ export const routes: Routes = [
         loadComponent: () => import('./features/activities/activity-form/activity-form.component').then(m => m.ActivityFormComponent)
       },
       {
+        path: 'chronic',
+        loadComponent: () => import('./features/chronic/chronic-list/chronic-list.component').then(m => m.ChronicListComponent)
+      },
+      {
+        path: 'chronic/new',
+        loadComponent: () => import('./features/chronic/chronic-form/chronic-form.component').then(m => m.ChronicFormComponent)
+      },
+      {
+        path: 'chronic/:id/edit',
+        loadComponent: () => import('./features/chronic/chronic-form/chronic-form.component').then(m => m.ChronicFormComponent)
+      },
+      {
+        path: 'chronic/:id',
+        loadComponent: () => import('./features/chronic/chronic-detail/chronic-detail.component').then(m => m.ChronicDetailComponent)
+      },
+      {
         path: 'search',
         loadComponent: () => import('./features/search/search.component').then(m => m.SearchComponent)
       },

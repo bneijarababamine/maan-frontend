@@ -170,6 +170,37 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
         </div>
       </div>
 
+      <!-- Chronic Patients -->
+      <div *ngIf="result.chronic_patients?.length" class="section">
+        <div class="section-header chronic-color">
+          <span class="mat-icon">medication</span>
+          {{ 'MENU.CHRONIC' | translate }} ({{ result.chronic_patients.length }})
+        </div>
+        <div *ngFor="let p of result.chronic_patients" class="person-card">
+          <div class="person-header">
+            <div class="avatar chronic-av">{{ p.name.charAt(0) }}</div>
+            <div class="person-info">
+              <a [routerLink]="['/chronic', p.id]" class="person-name">{{ p.name }}</a>
+              <span class="disease-pill">💊 {{ p.disease_name }}</span>
+              <span *ngIf="p.phone" class="person-phone">📞 {{ p.phone }}</span>
+            </div>
+            <span class="badge" [class]="p.is_active ? 'success' : 'secondary'">
+              {{ (p.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
+            </span>
+          </div>
+          <!-- Medications history -->
+          <div *ngIf="p.medications?.length" class="tx-section">
+            <div class="tx-label received-color">💊 {{ 'CHRONIC.MEDICATIONS' | translate }} — {{ 'CHRONIC.TOTAL_SPENT' | translate }}: <strong>{{ p.total_spent | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}</strong></div>
+            <div *ngFor="let m of p.medications" class="tx-row">
+              <img *ngIf="m.image_url" [src]="m.image_url" class="med-thumb">
+              <span class="tx-type">{{ m.name }}</span>
+              <span class="tx-date">{{ m.consumed_at | date:'dd/MM/yyyy' }}</span>
+              <span class="tx-amount received-color">{{ m.total | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Shared template: activity benefits (received from us) -->
@@ -221,6 +252,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
     .member-color   { background: #E3F2FD; color: #1565C0; }
     .donor-color    { background: #F3E5F5; color: #6A1B9A; }
     .family-color   { background: #E0F2F1; color: #00695C; }
+    .chronic-color  { background: #FCE4EC; color: #880E4F; }
     .person-card { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; }
     .person-card:last-child { border-bottom: none; }
     .person-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
@@ -235,6 +267,9 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
     .member-av   { background: linear-gradient(135deg, #1565C0, #64B5F6); }
     .donor-av    { background: linear-gradient(135deg, #6A1B9A, #CE93D8); }
     .family-av   { background: linear-gradient(135deg, #00695C, #4DB6AC); }
+    .chronic-av  { background: linear-gradient(135deg, #880E4F, #F48FB1); }
+    .disease-pill { font-size: 11px; background: #FCE4EC; color: #880E4F; border-radius: 8px; padding: 2px 7px; display: inline-block; }
+    .med-thumb { width: 28px; height: 28px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
     .person-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
     .person-name { font-weight: 700; font-size: 14px; color: #1565C0; text-decoration: none; }
     .person-name:hover { text-decoration: underline; }
@@ -316,7 +351,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (!this.result) return 0;
     return this.result.guardians.length + this.result.orphans.length +
            this.result.members.length + this.result.donors.length +
-           this.result.families.length;
+           this.result.families.length + (this.result.chronic_patients?.length ?? 0);
   }
 
   activityColor(type: string): string { return this.activityColors[type] ?? '#757575'; }
