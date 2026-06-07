@@ -260,7 +260,7 @@ export class OrphanDetailComponent implements OnInit {
   private loadBenefits(id: number): void {
     this.benefitsLoading = true;
     this.service.getBenefits(id).subscribe({
-      next: (res: any) => { this.benefits = res.data ?? []; this.benefitsLoading = false; },
+      next: (res: any) => { this.benefits = Array.isArray(res) ? res : (res.data ?? []); this.benefitsLoading = false; },
       error: () => { this.benefitsLoading = false; }
     });
   }
