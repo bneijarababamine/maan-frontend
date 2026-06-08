@@ -26,7 +26,11 @@ export interface PatientMedication {
   quantity: number;
   total: number;
   payment_method: string;
-  consumed_at: string;
+  start_date: string;
+  duration_value: number;
+  duration_unit: 'days' | 'weeks' | 'months';
+  end_date: string;
+  days_remaining: number;
   notes?: string;
   image_url?: string;
 }

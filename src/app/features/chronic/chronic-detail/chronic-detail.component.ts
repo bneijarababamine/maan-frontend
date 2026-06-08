@@ -84,16 +84,30 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 
           <!-- Add medication form -->
           <div *ngIf="showMedForm" class="med-form">
+            <div class="form-group">
+              <label>{{ 'CHRONIC.MED_NAME' | translate }} *</label>
+              <input [(ngModel)]="medName" class="form-control">
+            </div>
+
+            <!-- Start date + Duration side by side -->
             <div class="med-form-row">
               <div class="form-group">
-                <label>{{ 'CHRONIC.MED_NAME' | translate }} *</label>
-                <input [(ngModel)]="medName" class="form-control">
+                <label>{{ 'CHRONIC.MED_START_DATE' | translate }} *</label>
+                <input [(ngModel)]="medStartDate" type="date" class="form-control">
               </div>
               <div class="form-group">
-                <label>{{ 'CHRONIC.MED_DATE' | translate }} *</label>
-                <input [(ngModel)]="medDate" type="date" class="form-control">
+                <label>{{ 'CHRONIC.MED_DURATION' | translate }} *</label>
+                <div class="duration-row">
+                  <input [(ngModel)]="medDurationValue" type="number" min="1" step="1" class="form-control dur-val">
+                  <select [(ngModel)]="medDurationUnit" class="form-control dur-unit">
+                    <option value="days">{{ 'CHRONIC.DAYS' | translate }}</option>
+                    <option value="weeks">{{ 'CHRONIC.WEEKS' | translate }}</option>
+                    <option value="months">{{ 'CHRONIC.MONTHS' | translate }}</option>
+                  </select>
+                </div>
               </div>
             </div>
+
             <div class="med-form-row">
               <div class="form-group">
                 <label>{{ 'CHRONIC.MED_PRICE' | translate }} ({{ 'COMMON.MRU' | translate }})</label>
@@ -128,7 +142,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
             </div>
 
             <button class="btn btn-primary" (click)="addMedication()"
-                    [disabled]="savingMed || !medName || !medDate || !medPayment">
+                    [disabled]="savingMed || !medName || !medStartDate || !medDurationValue || !medPayment">
               {{ (savingMed ? 'COMMON.SAVING' : 'CHRONIC.SAVE_MED') | translate }}
             </button>
           </div>
@@ -145,7 +159,13 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
             </div>
             <div class="med-body">
               <strong class="med-name">{{ m.name }}</strong>
-              <span class="med-date">{{ m.consumed_at | date:'dd/MM/yyyy' }}</span>
+              <span class="med-date">{{ m.start_date | date:'dd/MM/yyyy' }} → {{ m.end_date | date:'dd/MM/yyyy' }}</span>
+              <span class="med-duration">{{ m.duration_value }} {{ durationUnitLabel(m.duration_unit) }}</span>
+              <!-- Remaining badge -->
+              <span class="remaining-badge" [ngClass]="remainingClass(m)">
+                <span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px;">schedule</span>
+                {{ remainingLabel(m) }}
+              </span>
               <span *ngIf="m.notes" class="med-notes">{{ m.notes }}</span>
               <span class="med-method">{{ getBankLabel(m.payment_method) }}</span>
             </div>
@@ -201,6 +221,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .btn-add:hover { background:#F3E5F5; }
     .med-form { background:#faf5ff; border-radius:10px; padding:16px; margin-bottom:16px; display:flex; flex-direction:column; gap:10px; }
     .med-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .duration-row { display:flex; gap:6px; }
+    .dur-val { width:70px; flex-shrink:0; }
+    .dur-unit { flex:1; }
     .form-group { display:flex; flex-direction:column; gap:4px; }
     label { font-size:12px; font-weight:600; color:#555; }
     .form-control { padding:8px 10px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
@@ -218,8 +241,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .med-body { flex:1; display:flex; flex-direction:column; gap:3px; }
     .med-name { font-size:14px; font-weight:700; color:#222; }
     .med-date { font-size:11px; color:#999; }
+    .med-duration { font-size:11px; color:#7B1FA2; font-weight:600; }
     .med-notes { font-size:11px; color:#777; }
     .med-method { font-size:11px; background:#E8EAF6; color:#3949AB; padding:2px 6px; border-radius:6px; display:inline-block; }
+    .remaining-badge { display:inline-flex; align-items:center; gap:3px; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:700; width:fit-content; }
+    .remaining-badge.ok      { background:#E8F5E9; color:#2E7D32; }
+    .remaining-badge.soon    { background:#FFF8E1; color:#F57F17; }
+    .remaining-badge.urgent  { background:#FFEBEE; color:#C62828; }
+    .remaining-badge.expired { background:#ECEFF1; color:#607D8B; }
     .med-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
     .med-total { font-size:15px; font-weight:700; color:#6A1B9A; }
     .med-detail { font-size:11px; color:#999; }
@@ -244,7 +273,9 @@ export class ChronicDetailComponent implements OnInit {
   savingMed = false;
   balanceError = false;
   medName = '';
-  medDate = '';
+  medStartDate = '';
+  medDurationValue: number = 30;
+  medDurationUnit: 'days' | 'weeks' | 'months' = 'days';
   medPrice: number | null = null;
   medQty: number = 1;
   medPayment = '';
@@ -288,6 +319,26 @@ export class ChronicDetailComponent implements OnInit {
     return b ? b.name_fr : method;
   }
 
+  durationUnitLabel(unit: string): string {
+    const key = unit === 'days' ? 'CHRONIC.DAYS' : unit === 'weeks' ? 'CHRONIC.WEEKS' : 'CHRONIC.MONTHS';
+    return this.translate.instant(key);
+  }
+
+  remainingClass(m: PatientMedication): string {
+    const d = m.days_remaining;
+    if (d < 0) return 'expired';
+    if (d <= 7) return 'urgent';
+    if (d <= 14) return 'soon';
+    return 'ok';
+  }
+
+  remainingLabel(m: PatientMedication): string {
+    const d = m.days_remaining;
+    if (d < 0) return this.translate.instant('CHRONIC.EXPIRED');
+    if (d === 0) return this.translate.instant('CHRONIC.EXPIRES_TODAY');
+    return `${d} ${this.translate.instant('CHRONIC.DAYS_LEFT')}`;
+  }
+
   onImageSelect(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -298,12 +349,14 @@ export class ChronicDetailComponent implements OnInit {
   }
 
   addMedication(): void {
-    if (!this.patient || !this.medName || !this.medDate || !this.medPayment) return;
+    if (!this.patient || !this.medName || !this.medStartDate || !this.medDurationValue || !this.medPayment) return;
     this.savingMed = true;
     this.balanceError = false;
     const fd = new FormData();
     fd.append('name', this.medName);
-    fd.append('consumed_at', this.medDate);
+    fd.append('start_date', this.medStartDate);
+    fd.append('duration_value', String(this.medDurationValue));
+    fd.append('duration_unit', this.medDurationUnit);
     fd.append('price', String(this.medPrice ?? 0));
     fd.append('quantity', String(this.medQty));
     fd.append('payment_method', this.medPayment);
@@ -325,7 +378,8 @@ export class ChronicDetailComponent implements OnInit {
   }
 
   resetMedForm(): void {
-    this.medName = ''; this.medDate = ''; this.medPrice = null;
+    this.medName = ''; this.medStartDate = ''; this.medDurationValue = 30;
+    this.medDurationUnit = 'days'; this.medPrice = null;
     this.medQty = 1; this.medPayment = ''; this.medNotes = '';
     this.medImageFile = null; this.medImagePreview = null;
   }
