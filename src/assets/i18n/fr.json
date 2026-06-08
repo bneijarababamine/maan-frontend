@@ -422,7 +422,8 @@
     "ERROR_MSG":        "Une erreur est survenue",
     "NAME":             "Nom",
     "PHONE":            "Téléphone",
-    "FIELD_REQUIRED":   "Ce champ est obligatoire"
+    "FIELD_REQUIRED":   "Ce champ est obligatoire",
+    "END_DATE":         "Date de fin"
   },
   "AUTH_EXTRA": {
     "ROLE_ADMIN":    "Administrateur",

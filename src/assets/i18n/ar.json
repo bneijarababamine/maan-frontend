@@ -422,7 +422,8 @@
     "ERROR_MSG":        "حدث خطأ ما",
     "NAME":             "الاسم",
     "PHONE":            "الهاتف",
-    "FIELD_REQUIRED":   "هذا الحقل مطلوب"
+    "FIELD_REQUIRED":   "هذا الحقل مطلوب",
+    "END_DATE":         "تاريخ الانتهاء"
   },
   "AUTH_EXTRA": {
     "ROLE_ADMIN":    "مسؤول",
