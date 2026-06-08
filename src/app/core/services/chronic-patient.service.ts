@@ -41,10 +41,11 @@ export class ChronicPatientService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(params?: { search?: string; status?: string }): Observable<{ status: boolean; data: ChronicPatient[] }> {
+  getAll(params?: { search?: string; status?: string; with_medications?: boolean }): Observable<{ status: boolean; data: ChronicPatient[] }> {
     let p = new HttpParams();
     if (params?.search) p = p.set('search', params.search);
     if (params?.status) p = p.set('status', params.status);
+    if (params?.with_medications) p = p.set('with_medications', '1');
     return this.http.get<any>(this.api, { params: p });
   }
 
