@@ -50,7 +50,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
           <span class="status-badge" [class.active]="p.is_active" [class.inactive]="!p.is_active">
             {{ (p.is_active ? 'COMMON.ACTIVE' : 'COMMON.INACTIVE') | translate }}
           </span>
-          <button class="btn-del" (click)="$event.preventDefault(); askDelete(p)">🗑️</button>
+          <button class="btn-del" (click)="$event.preventDefault(); $event.stopPropagation(); askDelete(p)">🗑️</button>
         </div>
       </a>
     </div>
