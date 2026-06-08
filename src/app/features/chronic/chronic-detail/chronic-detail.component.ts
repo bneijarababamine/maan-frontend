@@ -8,14 +8,15 @@ import { BankService } from '../../../core/services/bank.service';
 import { Bank } from '../../../core/models/bank.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
 
 @Component({
   selector: 'app-chronic-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, PageHeaderComponent, ConfirmDialogComponent],
+  imports: [CommonModule, RouterModule, FormsModule, TranslateModule, PageHeaderComponent, ConfirmDialogComponent, SearchableSelectComponent],
   template: `
     <app-page-header [title]="patient?.full_name || ''" backLink="/chronic">
-      <button class="btn btn-edit" [routerLink]="['/chronic', patient?.id, 'edit']" *ngIf="patient">
+      <button class="btn btn-edit" [routerLink]="['/chronic', patient!.id, 'edit']" *ngIf="patient">
         ✏️ {{ 'COMMON.EDIT' | translate }}
       </button>
     </app-page-header>
@@ -99,11 +100,13 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                 <label>{{ 'CHRONIC.MED_DURATION' | translate }} *</label>
                 <div class="duration-row">
                   <input [(ngModel)]="medDurationValue" type="number" min="1" step="1" class="form-control dur-val">
-                  <select [(ngModel)]="medDurationUnit" class="form-control dur-unit">
-                    <option value="days">{{ 'CHRONIC.DAYS' | translate }}</option>
-                    <option value="weeks">{{ 'CHRONIC.WEEKS' | translate }}</option>
-                    <option value="months">{{ 'CHRONIC.MONTHS' | translate }}</option>
-                  </select>
+                  <div class="dur-unit">
+                    <app-searchable-select
+                      [options]="durationUnitOptions"
+                      [value]="medDurationUnit"
+                      (valueChange)="setDurationUnit($event)">
+                    </app-searchable-select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -118,15 +121,17 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                 <input [(ngModel)]="medQty" type="number" min="1" step="1" class="form-control">
               </div>
             </div>
+
             <div class="form-group">
               <label>{{ 'CONTRIBUTIONS.PAYMENT_METHOD' | translate }} *</label>
-              <select [(ngModel)]="medPayment" class="form-control">
-                <option value="">—</option>
-                <option *ngFor="let b of banks" [value]="b.name_fr.toLowerCase()">
-                  {{ b.name_fr }} ({{ b.balance | number:'1.0-0' }} {{ 'COMMON.MRU' | translate }})
-                </option>
-              </select>
+              <app-searchable-select
+                [options]="paymentOptions"
+                [value]="medPayment"
+                placeholder="—"
+                (valueChange)="setPayment($event)">
+              </app-searchable-select>
             </div>
+
             <div class="form-group">
               <label>{{ 'CHRONIC.MED_IMAGE' | translate }}</label>
               <input type="file" accept="image/*" (change)="onImageSelect($event)" class="form-control">
@@ -161,7 +166,6 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
               <strong class="med-name">{{ m.name }}</strong>
               <span class="med-date">{{ m.start_date | date:'dd/MM/yyyy' }} → {{ m.end_date | date:'dd/MM/yyyy' }}</span>
               <span class="med-duration">{{ m.duration_value }} {{ durationUnitLabel(m.duration_unit) }}</span>
-              <!-- Remaining badge -->
               <span class="remaining-badge" [ngClass]="remainingClass(m)">
                 <span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px;">schedule</span>
                 {{ remainingLabel(m) }}
@@ -221,7 +225,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .btn-add:hover { background:#F3E5F5; }
     .med-form { background:#faf5ff; border-radius:10px; padding:16px; margin-bottom:16px; display:flex; flex-direction:column; gap:10px; }
     .med-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .duration-row { display:flex; gap:6px; }
+    .duration-row { display:flex; gap:6px; align-items:flex-start; }
     .dur-val { width:70px; flex-shrink:0; }
     .dur-unit { flex:1; }
     .form-group { display:flex; flex-direction:column; gap:4px; }
@@ -287,6 +291,9 @@ export class ChronicDetailComponent implements OnInit {
   showDeleteMed = false;
   deleteMedTarget: PatientMedication | null = null;
 
+  paymentOptions: SelectOption[] = [];
+  durationUnitOptions: SelectOption[] = [];
+
   constructor(
     private route: ActivatedRoute,
     private service: ChronicPatientService,
@@ -295,7 +302,23 @@ export class ChronicDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.bankService.getAll().subscribe({ next: res => this.banks = res.data.filter((b: Bank) => b.is_active) });
+    this.durationUnitOptions = [
+      { id: 'days',   label: this.translate.instant('CHRONIC.DAYS') },
+      { id: 'weeks',  label: this.translate.instant('CHRONIC.WEEKS') },
+      { id: 'months', label: this.translate.instant('CHRONIC.MONTHS') },
+    ];
+
+    this.bankService.getAll().subscribe({
+      next: res => {
+        this.banks = res.data.filter((b: Bank) => b.is_active);
+        this.paymentOptions = this.banks.map(b => ({
+          id: b.name_fr.toLowerCase(),
+          label: b.name_fr,
+          sublabel: `${(b.balance ?? 0).toLocaleString()} MRU`,
+        }));
+      }
+    });
+
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.load(id);
   }
@@ -311,6 +334,14 @@ export class ChronicDetailComponent implements OnInit {
       },
       error: () => { this.loading = false; }
     });
+  }
+
+  setDurationUnit(val: string | number | null): void {
+    this.medDurationUnit = (val as 'days' | 'weeks' | 'months') ?? 'days';
+  }
+
+  setPayment(val: string | number | null): void {
+    this.medPayment = (val as string) ?? '';
   }
 
   getBankLabel(method: string): string {

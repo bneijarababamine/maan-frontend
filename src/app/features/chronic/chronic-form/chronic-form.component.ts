@@ -2,14 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ChronicPatientService } from '../../../core/services/chronic-patient.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
 
 @Component({
   selector: 'app-chronic-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslateModule, PageHeaderComponent, SearchableSelectComponent],
   template: `
     <app-page-header [title]="(isEdit ? 'CHRONIC.EDIT' : 'CHRONIC.ADD') | translate" backLink="/chronic"></app-page-header>
 
@@ -30,11 +31,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <div class="form-row">
           <div class="form-group">
             <label>{{ 'ORPHANS.GENDER' | translate }}</label>
-            <select formControlName="gender" class="form-control">
-              <option value="">—</option>
-              <option value="male">{{ 'ORPHANS.MALE' | translate }}</option>
-              <option value="female">{{ 'ORPHANS.FEMALE' | translate }}</option>
-            </select>
+            <app-searchable-select
+              [options]="genderOptions"
+              [value]="selectedGender"
+              placeholder="—"
+              (valueChange)="onGenderChange($event)">
+            </app-searchable-select>
           </div>
           <div class="form-group">
             <label>{{ 'ORPHANS.BIRTH_DATE' | translate }}</label>
@@ -98,15 +100,25 @@ export class ChronicFormComponent implements OnInit {
   isEdit = false;
   patientId: number | null = null;
   saving = false;
+  selectedGender: string = '';
+
+  genderOptions: SelectOption[] = [];
 
   constructor(
     private fb: FormBuilder,
     private service: ChronicPatientService,
     private route: ActivatedRoute,
     private router: Router,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
+    this.genderOptions = [
+      { id: '', label: '—' },
+      { id: 'male',   label: this.translate.instant('ORPHANS.MALE') },
+      { id: 'female', label: this.translate.instant('ORPHANS.FEMALE') },
+    ];
+
     this.form = this.fb.group({
       full_name:    ['', Validators.required],
       disease_name: ['', Validators.required],
@@ -123,10 +135,18 @@ export class ChronicFormComponent implements OnInit {
       this.isEdit = true;
       this.patientId = +id;
       this.service.getById(+id).subscribe({
-        next: res => this.form.patchValue(res.data),
+        next: res => {
+          this.form.patchValue(res.data);
+          this.selectedGender = res.data.gender ?? '';
+        },
         error: () => this.router.navigate(['/chronic']),
       });
     }
+  }
+
+  onGenderChange(val: string | number | null): void {
+    this.selectedGender = (val as string) ?? '';
+    this.form.get('gender')!.setValue(this.selectedGender);
   }
 
   hasError(field: string): boolean {
